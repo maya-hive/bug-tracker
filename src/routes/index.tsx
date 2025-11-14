@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { TaskHeader } from '~/components/layout/header'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -6,10 +7,9 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   return (
-    <main className="p-8 flex flex-col gap-16">
-      <h1 className="text-4xl font-bold text-center">
-        Convex + Tanstack Start
-      </h1>
-    </main>
+    <div className="flex-1 flex flex-col overflow-hidden h-screen">
+      <TaskHeader />
+      <main className="w-full h-full overflow-x-auto"></main>
+    </div>
   )
 }
