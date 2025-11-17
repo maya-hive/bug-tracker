@@ -2,8 +2,12 @@ import * as React from 'react'
 import {
   Calendar as CalendarIcon,
   Plus,
-  Link as LinkIcon,
-  Github,
+  Link,
+  Bug,
+  Users,
+  Braces,
+  Folders,
+  CircleUserRound,
 } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
@@ -14,35 +18,35 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
+import usePresence from '@convex-dev/presence/react'
+import FacePile from '@convex-dev/presence/facepile'
+import { api } from 'convex/_generated/api'
 
 export function TaskHeader() {
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date | undefined>(
     new Date('2024-09-07'),
   )
+  const [name] = React.useState(
+    () => 'User ' + Math.floor(Math.random() * 10000),
+  )
+  const presenceState = usePresence(api.presence, 'my-chat-room', name)
+
   return (
     <div className="border-b border-border bg-background">
       <div className="flex items-center justify-between px-3 lg:px-6 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base lg:text-lg font-semibold">Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <Bug className="size-6" />
+            <h1 className="text-base lg:text-lg font-semibold">Bug Tracker</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-2 lg:gap-4">
-          <Button variant="outline" className="shadow-none" asChild>
-            <a
-              href="https://github.com/ln-dev7/square-ui/tree/master/templates/task-management"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Github className="size-4" />
-              GitHub
-            </a>
-          </Button>
           <ModeToggle />
           <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
             <span>Last update 3 days ago</span>
+            <FacePile presenceState={presenceState ?? []} />
             <div className="flex -space-x-2 ml-2">
               <Avatar className="size-5 border-2 border-background">
                 <AvatarImage src="https://api.dicebear.com/9.x/glass/svg?seed=AliceJohnson" />
@@ -67,14 +71,27 @@ export function TaskHeader() {
             size="sm"
             className="gap-2 hidden lg:flex"
           >
-            <LinkIcon className="size-4" />
-            Share
+            <CircleUserRound className="size-4" />
+            John Doe
           </Button>
         </div>
       </div>
 
       <div className="flex items-center justify-between px-3 lg:px-6 py-3 border-t border-border overflow-x-auto">
-        <div className="flex items-center gap-2 shrink-0"></div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" className="shadow-none">
+            <Braces className="size-4" />
+            Defects List
+          </Button>
+          <Button variant="ghost" className="shadow-none">
+            <Folders className="size-4" />
+            View Projects
+          </Button>
+          <Button variant="ghost" className="shadow-none">
+            <Users className="size-4" />
+            Manage Team
+          </Button>
+        </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <Popover open={open} onOpenChange={setOpen}>
@@ -107,8 +124,8 @@ export function TaskHeader() {
             </PopoverContent>
           </Popover>
           <Button size="sm" className="sm:gap-2 shrink-0">
+            <span className="hidden sm:inline">Add Defect</span>
             <Plus className="size-4" />
-            <span className="hidden sm:inline">Request task</span>
           </Button>
         </div>
       </div>
