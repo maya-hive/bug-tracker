@@ -32,6 +32,11 @@ export const getAuthUser = query({
       return
     }
 
-    return user
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      image: `https://api.dicebear.com/9.x/glass/svg?seed=${user._id}`,
+    }
   },
 })

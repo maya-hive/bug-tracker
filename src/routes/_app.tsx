@@ -2,6 +2,8 @@ import { convexQuery, useConvexAuth } from '@convex-dev/react-query'
 import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
 import { api } from 'convex/_generated/api'
 import { useQuery } from 'convex/react'
+
+import type { User } from '~/types/user'
 import { TaskHeader } from '~/components/layout/header'
 import { AuthUserContext } from '~/contexts/use-auth-user'
 
@@ -18,11 +20,12 @@ function AppLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const user = useQuery(api.auth.getAuthUser)
 
-  if (isLoading || !user) return null
+  if (isLoading) return null
   if (!isAuthenticated) return <Navigate to="/auth" />
+  if (!user) return null
 
   return (
-    <AuthUserContext.Provider value={user}>
+    <AuthUserContext.Provider value={user as User}>
       <div className="flex-1 flex flex-col overflow-hidden h-screen">
         <TaskHeader />
         <main className="w-full h-full overflow-x-auto p-8">

@@ -1,5 +1,4 @@
 import { Bug, Folders } from 'lucide-react'
-import type { User } from '@auth/core/types'
 
 import { Button } from '~/components/ui/button'
 import { ModeToggle } from '~/components/mode-toggle'
@@ -26,11 +25,11 @@ export function TaskHeader() {
             <UserPresence />
           </div>
           <ModeToggle />
-          {user && <UserOverview user={user} />}
+          <NavUser user={user} />
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-3 lg:px-6 py-3 border-t border-border overflow-x-auto">
+      <div className="flex items-center justify-between pl-1 pr-3 lg:pl-3 lg:pr-6 py-3 border-t border-border overflow-x-auto">
         <NavMenu />
         <ActionItems />
       </div>
@@ -49,15 +48,4 @@ const ActionItems = () => (
       Create Project
     </Button>
   </div>
-)
-
-const UserOverview = ({ user }: { user: User }) => (
-  <NavUser
-    user={{
-      name: user.name ?? 'User',
-      email: user.email ?? '',
-      avatar:
-        user.image ?? `https://api.dicebear.com/9.x/glass/svg?seed=${user.id}`,
-    }}
-  />
 )

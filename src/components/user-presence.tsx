@@ -5,7 +5,7 @@ import { useAuthUser } from '~/contexts/use-auth-user'
 
 export const UserPresence = () => {
   const user = useAuthUser()
-  const presenceState = usePresence(api.presence, 'app', user?.id ?? '')
+  const presenceState = usePresence(api.presence, 'app', user.name)
 
   return <FacePile presenceState={presenceState ?? []} />
 }
