@@ -1,6 +1,8 @@
 'use client'
 
 import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-react'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
@@ -23,6 +25,18 @@ export function NavUser({
     avatar: string
   }
 }) {
+  const { signOut } = useAuthActions()
+  const navigate = useNavigate()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      navigate({ to: '/auth' })
+    } catch (error) {
+      console.error('Failed to sign out:', error)
+    }
+  }
+
   return (
     <div className="w-full">
       <DropdownMenu>
@@ -57,7 +71,7 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSignOut}>
             <LogOut />
             Log out
           </DropdownMenuItem>
