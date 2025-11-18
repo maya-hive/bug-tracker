@@ -1,16 +1,19 @@
 import * as React from 'react'
+import usePresence from '@convex-dev/presence/react'
+import FacePile from '@convex-dev/presence/facepile'
+import { api } from 'convex/_generated/api'
+
 import {
-  Calendar as CalendarIcon,
-  Plus,
-  Link,
-  Bug,
-  Users,
   Braces,
+  Bug,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  CirclePlus,
   Folders,
-  CircleUserRound,
+  Users,
 } from 'lucide-react'
 import { Button } from '~/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { ButtonGroup } from '~/components/ui/button-group'
 import { ModeToggle } from '~/components/mode-toggle'
 import { Calendar } from '~/components/ui/calendar'
 import {
@@ -18,9 +21,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
-import usePresence from '@convex-dev/presence/react'
-import FacePile from '@convex-dev/presence/facepile'
-import { api } from 'convex/_generated/api'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
+import { NavUser } from '~/components/nav-user'
 
 export function TaskHeader() {
   const [open, setOpen] = React.useState(false)
@@ -43,37 +50,17 @@ export function TaskHeader() {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-4">
-          <ModeToggle />
           <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Last update 3 days ago</span>
             <FacePile presenceState={presenceState ?? []} />
-            <div className="flex -space-x-2 ml-2">
-              <Avatar className="size-5 border-2 border-background">
-                <AvatarImage src="https://api.dicebear.com/9.x/glass/svg?seed=AliceJohnson" />
-                <AvatarFallback>A</AvatarFallback>
-              </Avatar>
-              <Avatar className="size-5 border-2 border-background">
-                <AvatarImage src="https://api.dicebear.com/9.x/glass/svg?seed=BobSmith" />
-                <AvatarFallback>B</AvatarFallback>
-              </Avatar>
-              <Avatar className="size-5 border-2 border-background">
-                <AvatarImage src="https://api.dicebear.com/9.x/glass/svg?seed=CharlieBrown" />
-                <AvatarFallback>C</AvatarFallback>
-              </Avatar>
-              <Avatar className="size-5 border-2 border-background">
-                <AvatarImage src="https://api.dicebear.com/9.x/glass/svg?seed=DianaPrince" />
-                <AvatarFallback>D</AvatarFallback>
-              </Avatar>
-            </div>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="gap-2 hidden lg:flex"
-          >
-            <CircleUserRound className="size-4" />
-            John Doe
-          </Button>
+          <ModeToggle />
+          <NavUser
+            user={{
+              name: 'John Doe',
+              email: 'john.doe@example.com',
+              avatar: 'https://api.dicebear.com/9.x/glass/svg?seed=JohnDoe',
+            }}
+          />
         </div>
       </div>
 
@@ -98,7 +85,6 @@ export function TaskHeader() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
                 className="gap-2 hidden lg:flex font-normal"
               >
                 <CalendarIcon className="size-4" />
@@ -123,10 +109,32 @@ export function TaskHeader() {
               />
             </PopoverContent>
           </Popover>
-          <Button size="sm" className="sm:gap-2 shrink-0">
-            <span className="hidden sm:inline">Add Defect</span>
-            <Plus className="size-4" />
-          </Button>
+          <DropdownMenu>
+            <ButtonGroup>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Quick Create</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <CirclePlus className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </ButtonGroup>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Bug className="size-4" />
+                Create Defect
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Folders className="size-4" />
+                Create Project
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Users className="size-4" />
+                CreateUser
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
