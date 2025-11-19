@@ -1,10 +1,10 @@
 import { Suspense } from 'react'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { DataTable } from '~/components/data-table'
+import { DataTable } from '~/routes/_app/dashboard/datatable/dashboard-table'
 import { SectionCards } from '~/components/section-cards'
 
-export const Route = createFileRoute('/_app/dashboard')({
+export const Route = createFileRoute('/_app/dashboard/')({
   component: Dashboard,
 })
 
@@ -32,7 +32,6 @@ const data = [
     type: 'Cover page',
     status: 'In Process',
     target: '18',
-    reviewer: 'Eddie Lake',
   },
   {
     id: 2,
@@ -40,7 +39,6 @@ const data = [
     type: 'Table of contents',
     status: 'Done',
     target: '29',
-    reviewer: 'Eddie Lake',
   },
   {
     id: 3,
@@ -48,7 +46,6 @@ const data = [
     type: 'Narrative',
     status: 'Done',
     target: '10',
-    reviewer: 'Eddie Lake',
   },
   {
     id: 4,
@@ -56,7 +53,6 @@ const data = [
     type: 'Narrative',
     status: 'Done',
     target: '27',
-    reviewer: 'Jamik Tashpulatov',
   },
   {
     id: 5,
@@ -64,7 +60,6 @@ const data = [
     type: 'Narrative',
     status: 'In Process',
     target: '2',
-    reviewer: 'Jamik Tashpulatov',
   },
   {
     id: 6,
@@ -72,7 +67,6 @@ const data = [
     type: 'Narrative',
     status: 'In Process',
     target: '20',
-    reviewer: 'Jamik Tashpulatov',
   },
   {
     id: 7,
@@ -80,7 +74,6 @@ const data = [
     type: 'Narrative',
     status: 'In Process',
     target: '19',
-    reviewer: 'Jamik Tashpulatov',
   },
   {
     id: 8,
@@ -88,7 +81,6 @@ const data = [
     type: 'Narrative',
     status: 'Done',
     target: '25',
-    reviewer: 'Assign reviewer',
   },
   {
     id: 9,
@@ -96,6 +88,5 @@ const data = [
     type: 'Technical content',
     status: 'Done',
     target: '7',
-    reviewer: 'Assign reviewer',
   },
 ]

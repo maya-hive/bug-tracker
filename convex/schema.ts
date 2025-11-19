@@ -11,4 +11,29 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
+  projects: defineTable({
+    name: v.string(),
+    environment: v.union(
+      v.literal('live'),
+      v.literal('staging'),
+      v.literal('dev'),
+    ),
+  }),
+  defects: defineTable({
+    name: v.string(),
+    description: v.string(),
+    attachments: v.optional(v.array(v.id('_storage'))),
+    severity: v.union(
+      v.literal('critical'),
+      v.literal('high'),
+      v.literal('medium'),
+      v.literal('low'),
+    ),
+    status: v.union(
+      v.literal('open'),
+      v.literal('in-progress'),
+      v.literal('resolved'),
+      v.literal('closed'),
+    ),
+  }),
 })
