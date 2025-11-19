@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,6 +7,8 @@ import { Upload, X } from 'lucide-react'
 import { useMutation } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
+import type { Id } from 'convex/_generated/dataModel'
+import type { DefectTableItem } from './defects-table.types'
 import {
   Dialog,
   DialogContent,
@@ -34,30 +36,32 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 
-const createDefectSchema = z.object({
+const editDefectSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().min(1, 'Description is required'),
   severity: z.enum(['critical', 'high', 'medium', 'low']),
   status: z.enum(['open', 'in-progress', 'resolved', 'closed']),
 })
 
-type CreateDefectFormValues = z.infer<typeof createDefectSchema>
+type EditDefectFormValues = z.infer<typeof editDefectSchema>
 
-export function CreateDefectDialog({
+export function EditDefectDialog({
+  defect,
   open,
   onOpenChange,
 }: {
+  defect: DefectTableItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const createDefect = useMutation(api.defects.createDefect)
+  const updateDefect = useMutation(api.defects.updateDefect)
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [attachments, setAttachments] = useState<Array<string>>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
 
-  const form = useForm<CreateDefectFormValues>({
-    resolver: zodResolver(createDefectSchema),
+  const form = useForm<EditDefectFormValues>({
+    resolver: zodResolver(editDefectSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -65,6 +69,19 @@ export function CreateDefectDialog({
       status: 'open',
     },
   })
+
+  // Reset form when defect changes
+  useEffect(() => {
+    if (defect && open) {
+      form.reset({
+        name: defect.name,
+        description: defect.description,
+        severity: defect.severity,
+        status: defect.status,
+      })
+      setAttachments(defect.attachments)
+    }
+  }, [defect, open, form])
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -97,37 +114,40 @@ export function CreateDefectDialog({
     setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const onSubmit = async (values: CreateDefectFormValues) => {
+  const onSubmit = async (values: EditDefectFormValues) => {
+    if (!defect) return
+
     setIsSubmitting(true)
     try {
-      await createDefect({
+      await updateDefect({
+        defectId: defect._id as Id<'defects'>,
         name: values.name,
         description: values.description,
         severity: values.severity,
         status: values.status,
-        attachments: attachments as Array<any>,
+        attachments: attachments as Array<Id<'_storage'>>,
       })
 
-      toast.success('Defect created successfully')
+      toast.success('Defect updated successfully')
       onOpenChange(false)
       form.reset()
       setAttachments([])
     } catch (error) {
-      toast.error('Failed to create defect')
+      toast.error('Failed to update defect')
       console.error(error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  if (!defect) return null
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Defect</DialogTitle>
-          <DialogDescription>
-            Create a new defect with details and attachments.
-          </DialogDescription>
+          <DialogTitle>Edit Defect</DialogTitle>
+          <DialogDescription>Update defect information.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -228,13 +248,13 @@ export function CreateDefectDialog({
                     onChange={(e) => handleFileUpload(e.target.files)}
                     disabled={uploadingFiles}
                     className="hidden"
-                    id="file-upload-create"
+                    id="file-upload"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() =>
-                      document.getElementById('file-upload-create')?.click()
+                      document.getElementById('file-upload')?.click()
                     }
                     disabled={uploadingFiles}
                   >
@@ -244,7 +264,7 @@ export function CreateDefectDialog({
                 </div>
                 {attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {attachments.map((attachmentId, index) => (
+                    {attachments.map((index) => (
                       <div
                         key={index}
                         className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md"
@@ -255,7 +275,7 @@ export function CreateDefectDialog({
                           variant="ghost"
                           size="icon"
                           className="size-5"
-                          onClick={() => removeAttachment(index)}
+                          onClick={() => removeAttachment(Number(index))}
                         >
                           <X className="size-3" />
                         </Button>
@@ -271,7 +291,6 @@ export function CreateDefectDialog({
                 variant="outline"
                 onClick={() => {
                   onOpenChange(false)
-                  form.reset()
                   setAttachments([])
                 }}
                 disabled={isSubmitting}
@@ -279,7 +298,7 @@ export function CreateDefectDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting || uploadingFiles}>
-                {isSubmitting ? 'Creating...' : 'Create Defect'}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>

@@ -4,10 +4,11 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus } from 'lucide-react'
-import { ProjectsTable } from './datatable/projects-table'
-import { EditProjectDialog } from './edit-project-dialog'
-import { CreateProjectDialog } from './create-project-dialog'
-import type { ProjectTableItem } from './datatable/projects-table.types'
+import type { UserTableItem } from '~/components/users/users-table.types'
+import type { Id } from 'convex/_generated/dataModel'
+import { UsersTable } from '~/components/users/users-table'
+import { EditUserDialog } from '~/components/users/edit-user-dialog'
+import { CreateUserDialog } from '~/components/users/create-user-dialog'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
@@ -20,58 +21,55 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_app/projects/')({
-  component: Projects,
+export const Route = createFileRoute('/_app/users')({
+  component: Users,
 })
 
-function Projects() {
-  const projects = useQuery(api.projects.listProjects)
-  const deleteProject = useMutation(api.projects.deleteProject)
-  const [editingProject, setEditingProject] = useState<ProjectTableItem | null>(
-    null,
-  )
-  const [deletingProject, setDeletingProject] =
-    useState<ProjectTableItem | null>(null)
+function Users() {
+  const users = useQuery(api.users.listUsers)
+  const deleteUser = useMutation(api.users.deleteUser)
+  const [editingUser, setEditingUser] = useState<UserTableItem | null>(null)
+  const [deletingUser, setDeletingUser] = useState<UserTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [createProjectOpen, setCreateProjectOpen] = useState(false)
+  const [createUserOpen, setCreateUserOpen] = useState(false)
 
-  const handleEdit = (project: ProjectTableItem) => {
-    setEditingProject(project)
+  const handleEdit = (user: UserTableItem) => {
+    setEditingUser(user)
   }
 
-  const handleDelete = (project: ProjectTableItem) => {
-    setDeletingProject(project)
+  const handleDelete = (user: UserTableItem) => {
+    setDeletingUser(user)
   }
 
   const confirmDelete = async () => {
-    if (!deletingProject) return
+    if (!deletingUser) return
 
     setIsDeleting(true)
     try {
-      await deleteProject({ projectId: deletingProject._id })
-      toast.success('Project deleted successfully')
-      setDeletingProject(null)
+      await deleteUser({ userId: deletingUser._id as Id<'users'> })
+      toast.success('User deleted successfully')
+      setDeletingUser(null)
     } catch (error) {
-      toast.error('Failed to delete project')
+      toast.error('Failed to delete user')
       console.error(error)
     } finally {
       setIsDeleting(false)
     }
   }
 
-  if (projects === undefined) {
+  if (users === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading projects...</div>
+        <div className="text-muted-foreground">Loading users...</div>
       </div>
     )
   }
 
-  const projectsData: Array<ProjectTableItem> = projects.map((project) => ({
-    _id: project._id,
-    _creationTime: project._creationTime,
-    name: project.name,
-    environment: project.environment,
+  const usersData: Array<UserTableItem> = users.map((user) => ({
+    _id: user._id,
+    _creationTime: user._creationTime,
+    name: user.name,
+    email: user.email as string,
   }))
 
   return (
@@ -79,43 +77,43 @@ function Projects() {
       <div className="mb-6 px-4 lg:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Projects</h1>
+            <h1 className="text-2xl font-semibold">Users</h1>
             <p className="text-muted-foreground">
-              Manage projects and their environments
+              Manage users and their permissions
             </p>
           </div>
-          <Button onClick={() => setCreateProjectOpen(true)}>
+          <Button onClick={() => setCreateUserOpen(true)}>
             <CirclePlus className="size-4" />
-            Create New Project
+            Create New User
           </Button>
         </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
-        <ProjectsTable
-          data={projectsData}
+        <UsersTable
+          data={usersData}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       </Suspense>
-      <CreateProjectDialog
-        open={createProjectOpen}
-        onOpenChange={setCreateProjectOpen}
+      <CreateUserDialog
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
       />
-      <EditProjectDialog
-        project={editingProject}
-        open={!!editingProject}
-        onOpenChange={(open) => !open && setEditingProject(null)}
+      <EditUserDialog
+        user={editingUser}
+        open={!!editingUser}
+        onOpenChange={(open) => !open && setEditingUser(null)}
       />
       <AlertDialog
-        open={!!deletingProject}
-        onOpenChange={(open) => !open && setDeletingProject(null)}
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              project {deletingProject?.name}.
+              user account for {deletingUser?.email}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

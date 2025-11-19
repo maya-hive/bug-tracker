@@ -1,4 +1,4 @@
-import { Bug, Check, ChevronsUpDown } from 'lucide-react'
+import { Bug, ChevronsUpDown } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
@@ -23,7 +23,6 @@ import {
   CommandItem,
   CommandList,
 } from '~/components/ui/command'
-import { cn } from '~/lib/utils'
 
 export function TaskHeader() {
   const user = useAuthUser()

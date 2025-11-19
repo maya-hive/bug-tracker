@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router'
 import { ChevronDown, Columns2 } from 'lucide-react'
 import type { DefectTableItem } from './defects-table.types'
 import type { Table as TanstackTable } from '@tanstack/react-table'

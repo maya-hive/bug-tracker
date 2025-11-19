@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -6,8 +6,6 @@ import { z } from 'zod'
 import { useMutation } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import type { Id } from 'convex/_generated/dataModel'
-import type { UserTableItem } from './datatable/users-table.types'
 import {
   Dialog,
   DialogContent,
@@ -27,90 +25,62 @@ import {
   FormMessage,
 } from '~/components/ui/form'
 
-const editUserSchema = z.object({
-  name: z.string().optional().or(z.literal('')),
+const createUserSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  newPassword: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .optional()
-    .or(z.literal('')),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
-type EditUserFormValues = z.infer<typeof editUserSchema>
+type CreateUserFormValues = z.infer<typeof createUserSchema>
 
-export function EditUserDialog({
-  user,
+export function CreateUserDialog({
   open,
   onOpenChange,
 }: {
-  user: UserTableItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const updateUser = useMutation(api.users.updateUser)
+  const createUser = useMutation(api.users.createUser)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<EditUserFormValues>({
-    resolver: zodResolver(editUserSchema),
+  const form = useForm<CreateUserFormValues>({
+    resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
       email: '',
-      newPassword: '',
+      password: '',
     },
   })
 
-  // Reset form when user changes
-  useEffect(() => {
-    if (user && open) {
-      form.reset({
-        name: user.name || '',
-        email: user.email,
-        newPassword: '',
-      })
-    }
-  }, [user, open, form])
-
-  const onSubmit = async (values: EditUserFormValues) => {
-    if (!user) return
-
+  const onSubmit = async (values: CreateUserFormValues) => {
     setIsSubmitting(true)
     try {
-      await updateUser({
-        userId: user._id as Id<'users'>,
-        name: values.name || undefined,
+      await createUser({
+        name: values.name,
         email: values.email,
+        password: values.password,
       })
 
-      // Note: Password change is not implemented in the mutation yet
-      // You'll need to implement it separately or through the auth API
-      if (values.newPassword) {
-        toast.info(
-          'Password change is not yet implemented. Please use the auth API.',
-        )
-      }
-
-      toast.success('User updated successfully')
+      toast.success('User created successfully')
       onOpenChange(false)
       form.reset()
     } catch (error) {
-      toast.error('Failed to update user')
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create user'
+      toast.error(errorMessage)
       console.error(error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (!user) return null
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>Create User</DialogTitle>
           <DialogDescription>
-            Update user information. Leave password empty to keep current
-            password.
+            Create a new user with name, email, and password.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -143,14 +113,14 @@ export function EditUserDialog({
             />
             <FormField
               control={form.control}
-              name="newPassword"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password (optional)</FormLabel>
+                  <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Leave empty to keep current password"
+                      placeholder="Enter password (min 8 characters)"
                       {...field}
                     />
                   </FormControl>
@@ -162,13 +132,16 @@ export function EditUserDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  onOpenChange(false)
+                  form.reset()
+                }}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'Creating...' : 'Create User'}
               </Button>
             </DialogFooter>
           </form>

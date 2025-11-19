@@ -7,7 +7,7 @@ import { useMutation } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import type { Id } from 'convex/_generated/dataModel'
-import type { ProjectTableItem } from './datatable/projects-table.types'
+import type { ProjectTableItem } from './projects-table.types'
 import {
   Dialog,
   DialogContent,
@@ -100,9 +100,7 @@ export function EditProjectDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Project</DialogTitle>
-          <DialogDescription>
-            Update project information.
-          </DialogDescription>
+          <DialogDescription>Update project information.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

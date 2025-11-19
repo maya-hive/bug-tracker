@@ -1,6 +1,5 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { store } from './auth'
 
 /**
  * Create a new user
@@ -24,10 +23,9 @@ export const createUser = mutation({
     }
 
     // Create user using auth store
-    const userId = await store.createUser({
-      email: args.email,
+    const userId = await ctx.db.insert('users', {
       name: args.name,
-      password: args.password,
+      email: args.email,
     })
 
     return userId

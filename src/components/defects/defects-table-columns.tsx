@@ -83,7 +83,7 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function AttachmentsCell({ row }: { row: { original: DefectTableItem } }) {
-  const count = row.original.attachments?.length ?? 0
+  const count = row.original.attachments.length
   return (
     <div className="text-muted-foreground text-sm">
       {count === 0 ? (

@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppUsersIndexRouteImport } from './routes/_app/users/index'
-import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
-import { Route as AppDefectsIndexRouteImport } from './routes/_app/defects/index'
-import { Route as AppDashboardIndexRouteImport } from './routes/_app/dashboard/index'
+import { Route as AppUsersRouteImport } from './routes/_app/users'
+import { Route as AppProjectsRouteImport } from './routes/_app/projects'
+import { Route as AppDefectsRouteImport } from './routes/_app/defects'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -31,52 +31,52 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
-  id: '/users/',
-  path: '/users/',
+const AppUsersRoute = AppUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDefectsIndexRoute = AppDefectsIndexRouteImport.update({
-  id: '/defects/',
-  path: '/defects/',
+const AppDefectsRoute = AppDefectsRouteImport.update({
+  id: '/defects',
+  path: '/defects',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDashboardIndexRoute = AppDashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/dashboard': typeof AppDashboardIndexRoute
-  '/defects': typeof AppDefectsIndexRoute
-  '/projects': typeof AppProjectsIndexRoute
-  '/users': typeof AppUsersIndexRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/defects': typeof AppDefectsRoute
+  '/projects': typeof AppProjectsRoute
+  '/users': typeof AppUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/dashboard': typeof AppDashboardIndexRoute
-  '/defects': typeof AppDefectsIndexRoute
-  '/projects': typeof AppProjectsIndexRoute
-  '/users': typeof AppUsersIndexRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/defects': typeof AppDefectsRoute
+  '/projects': typeof AppProjectsRoute
+  '/users': typeof AppUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_app/dashboard/': typeof AppDashboardIndexRoute
-  '/_app/defects/': typeof AppDefectsIndexRoute
-  '/_app/projects/': typeof AppProjectsIndexRoute
-  '/_app/users/': typeof AppUsersIndexRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/defects': typeof AppDefectsRoute
+  '/_app/projects': typeof AppProjectsRoute
+  '/_app/users': typeof AppUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -88,10 +88,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/auth'
-    | '/_app/dashboard/'
-    | '/_app/defects/'
-    | '/_app/projects/'
-    | '/_app/users/'
+    | '/_app/dashboard'
+    | '/_app/defects'
+    | '/_app/projects'
+    | '/_app/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,49 +123,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/users/': {
-      id: '/_app/users/'
+    '/_app/users': {
+      id: '/_app/users'
       path: '/users'
       fullPath: '/users'
-      preLoaderRoute: typeof AppUsersIndexRouteImport
+      preLoaderRoute: typeof AppUsersRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/projects/': {
-      id: '/_app/projects/'
+    '/_app/projects': {
+      id: '/_app/projects'
       path: '/projects'
       fullPath: '/projects'
-      preLoaderRoute: typeof AppProjectsIndexRouteImport
+      preLoaderRoute: typeof AppProjectsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/defects/': {
-      id: '/_app/defects/'
+    '/_app/defects': {
+      id: '/_app/defects'
       path: '/defects'
       fullPath: '/defects'
-      preLoaderRoute: typeof AppDefectsIndexRouteImport
+      preLoaderRoute: typeof AppDefectsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/dashboard/': {
-      id: '/_app/dashboard/'
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardIndexRouteImport
+      preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
   }
 }
 
 interface AppRouteChildren {
-  AppDashboardIndexRoute: typeof AppDashboardIndexRoute
-  AppDefectsIndexRoute: typeof AppDefectsIndexRoute
-  AppProjectsIndexRoute: typeof AppProjectsIndexRoute
-  AppUsersIndexRoute: typeof AppUsersIndexRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppDefectsRoute: typeof AppDefectsRoute
+  AppProjectsRoute: typeof AppProjectsRoute
+  AppUsersRoute: typeof AppUsersRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppDashboardIndexRoute: AppDashboardIndexRoute,
-  AppDefectsIndexRoute: AppDefectsIndexRoute,
-  AppProjectsIndexRoute: AppProjectsIndexRoute,
-  AppUsersIndexRoute: AppUsersIndexRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppDefectsRoute: AppDefectsRoute,
+  AppProjectsRoute: AppProjectsRoute,
+  AppUsersRoute: AppUsersRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

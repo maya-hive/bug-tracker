@@ -4,11 +4,11 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus } from 'lucide-react'
-import { DefectsTable } from './datatable/defects-table'
-import { EditDefectDialog } from './edit-defect-dialog'
-import { CreateDefectDialog } from './create-defect-dialog'
-import type { DefectTableItem } from './datatable/defects-table.types'
+import type { ProjectTableItem } from '~/components/projects/projects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import { ProjectsTable } from '~/components/projects/projects-table'
+import { EditProjectDialog } from '~/components/projects/edit-project-dialog'
+import { CreateProjectDialog } from '~/components/projects/create-project-dialog'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
@@ -21,62 +21,58 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_app/defects/')({
-  component: Defects,
+export const Route = createFileRoute('/_app/projects')({
+  component: Projects,
 })
 
-function Defects() {
-  const defects = useQuery(api.defects.listDefects)
-  const deleteDefect = useMutation(api.defects.deleteDefect)
-  const [editingDefect, setEditingDefect] = useState<DefectTableItem | null>(
+function Projects() {
+  const projects = useQuery(api.projects.listProjects)
+  const deleteProject = useMutation(api.projects.deleteProject)
+  const [editingProject, setEditingProject] = useState<ProjectTableItem | null>(
     null,
   )
-  const [deletingDefect, setDeletingDefect] = useState<DefectTableItem | null>(
-    null,
-  )
+  const [deletingProject, setDeletingProject] =
+    useState<ProjectTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [createDefectOpen, setCreateDefectOpen] = useState(false)
+  const [createProjectOpen, setCreateProjectOpen] = useState(false)
 
-  const handleEdit = (defect: DefectTableItem) => {
-    setEditingDefect(defect)
+  const handleEdit = (project: ProjectTableItem) => {
+    setEditingProject(project)
   }
 
-  const handleDelete = (defect: DefectTableItem) => {
-    setDeletingDefect(defect)
+  const handleDelete = (project: ProjectTableItem) => {
+    setDeletingProject(project)
   }
 
   const confirmDelete = async () => {
-    if (!deletingDefect) return
+    if (!deletingProject) return
 
     setIsDeleting(true)
     try {
-      await deleteDefect({ defectId: deletingDefect._id as Id<'defects'> })
-      toast.success('Defect deleted successfully')
-      setDeletingDefect(null)
+      await deleteProject({ projectId: deletingProject._id as Id<'projects'> })
+      toast.success('Project deleted successfully')
+      setDeletingProject(null)
     } catch (error) {
-      toast.error('Failed to delete defect')
+      toast.error('Failed to delete project')
       console.error(error)
     } finally {
       setIsDeleting(false)
     }
   }
 
-  if (defects === undefined) {
+  if (projects === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading defects...</div>
+        <div className="text-muted-foreground">Loading projects...</div>
       </div>
     )
   }
 
-  const defectsData: Array<DefectTableItem> = defects.map((defect) => ({
-    _id: defect._id,
-    _creationTime: defect._creationTime,
-    name: defect.name,
-    description: defect.description,
-    attachments: defect.attachments ?? [],
-    severity: defect.severity,
-    status: defect.status,
+  const projectsData: Array<ProjectTableItem> = projects.map((project) => ({
+    _id: project._id,
+    _creationTime: project._creationTime,
+    name: project.name,
+    environment: project.environment,
   }))
 
   return (
@@ -84,43 +80,43 @@ function Defects() {
       <div className="mb-6 px-4 lg:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Defects</h1>
+            <h1 className="text-2xl font-semibold">Projects</h1>
             <p className="text-muted-foreground">
-              Manage defects and track their status
+              Manage projects and their environments
             </p>
           </div>
-          <Button onClick={() => setCreateDefectOpen(true)}>
+          <Button onClick={() => setCreateProjectOpen(true)}>
             <CirclePlus className="size-4" />
-            Create New Defect
+            Create New Project
           </Button>
         </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
-        <DefectsTable
-          data={defectsData}
+        <ProjectsTable
+          data={projectsData}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       </Suspense>
-      <CreateDefectDialog
-        open={createDefectOpen}
-        onOpenChange={setCreateDefectOpen}
+      <CreateProjectDialog
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
       />
-      <EditDefectDialog
-        defect={editingDefect}
-        open={!!editingDefect}
-        onOpenChange={(open) => !open && setEditingDefect(null)}
+      <EditProjectDialog
+        project={editingProject}
+        open={!!editingProject}
+        onOpenChange={(open) => !open && setEditingProject(null)}
       />
       <AlertDialog
-        open={!!deletingDefect}
-        onOpenChange={(open) => !open && setDeletingDefect(null)}
+        open={!!deletingProject}
+        onOpenChange={(open) => !open && setDeletingProject(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              defect {deletingDefect?.name}.
+              project {deletingProject?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

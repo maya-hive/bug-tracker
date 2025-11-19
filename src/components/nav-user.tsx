@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, ChevronsUpDown, LogOut } from 'lucide-react'
+import { BadgeCheck, LogOut } from 'lucide-react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useNavigate } from '@tanstack/react-router'
 
