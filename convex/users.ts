@@ -1,5 +1,38 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { store } from './auth'
+
+/**
+ * Create a new user
+ */
+export const createUser = mutation({
+  args: {
+    email: v.string(),
+    name: v.optional(v.string()),
+    password: v.string(),
+  },
+  returns: v.id('users'),
+  handler: async (ctx, args) => {
+    // Check if user with this email already exists
+    const existingUser = await ctx.db
+      .query('users')
+      .filter((q) => q.eq(q.field('email'), args.email))
+      .first()
+
+    if (existingUser) {
+      throw new Error('User with this email already exists')
+    }
+
+    // Create user using auth store
+    const userId = await store.createUser({
+      email: args.email,
+      name: args.name,
+      password: args.password,
+    })
+
+    return userId
+  },
+})
 
 /**
  * List all users

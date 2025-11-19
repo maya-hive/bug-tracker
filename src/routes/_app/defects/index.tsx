@@ -3,10 +3,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
+import { CirclePlus } from 'lucide-react'
 import { DefectsTable } from './datatable/defects-table'
 import { EditDefectDialog } from './edit-defect-dialog'
+import { CreateDefectDialog } from './create-defect-dialog'
 import type { DefectTableItem } from './datatable/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +35,7 @@ function Defects() {
     null,
   )
   const [isDeleting, setIsDeleting] = useState(false)
+  const [createDefectOpen, setCreateDefectOpen] = useState(false)
 
   const handleEdit = (defect: DefectTableItem) => {
     setEditingDefect(defect)
@@ -78,10 +82,18 @@ function Defects() {
   return (
     <>
       <div className="mb-6 px-4 lg:px-6">
-        <h1 className="text-2xl font-semibold">Defects</h1>
-        <p className="text-muted-foreground">
-          Manage defects and track their status
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Defects</h1>
+            <p className="text-muted-foreground">
+              Manage defects and track their status
+            </p>
+          </div>
+          <Button onClick={() => setCreateDefectOpen(true)}>
+            <CirclePlus className="size-4" />
+            Create New Defect
+          </Button>
+        </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
         <DefectsTable
@@ -90,6 +102,10 @@ function Defects() {
           onDelete={handleDelete}
         />
       </Suspense>
+      <CreateDefectDialog
+        open={createDefectOpen}
+        onOpenChange={setCreateDefectOpen}
+      />
       <EditDefectDialog
         defect={editingDefect}
         open={!!editingDefect}

@@ -3,9 +3,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
+import { CirclePlus } from 'lucide-react'
 import { UsersTable } from './datatable/users-table'
 import { EditUserDialog } from './edit-user-dialog'
+import { CreateUserDialog } from './create-user-dialog'
 import type { UserTableItem } from './datatable/users-table.types'
+import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +30,7 @@ function Users() {
   const [editingUser, setEditingUser] = useState<UserTableItem | null>(null)
   const [deletingUser, setDeletingUser] = useState<UserTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [createUserOpen, setCreateUserOpen] = useState(false)
 
   const handleEdit = (user: UserTableItem) => {
     setEditingUser(user)
@@ -70,10 +74,18 @@ function Users() {
   return (
     <>
       <div className="mb-6 px-4 lg:px-6">
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <p className="text-muted-foreground">
-          Manage users and their permissions
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Users</h1>
+            <p className="text-muted-foreground">
+              Manage users and their permissions
+            </p>
+          </div>
+          <Button onClick={() => setCreateUserOpen(true)}>
+            <CirclePlus className="size-4" />
+            Create New User
+          </Button>
+        </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
         <UsersTable
@@ -82,6 +94,10 @@ function Users() {
           onDelete={handleDelete}
         />
       </Suspense>
+      <CreateUserDialog
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
+      />
       <EditUserDialog
         user={editingUser}
         open={!!editingUser}

@@ -3,9 +3,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
+import { CirclePlus } from 'lucide-react'
 import { ProjectsTable } from './datatable/projects-table'
 import { EditProjectDialog } from './edit-project-dialog'
+import { CreateProjectDialog } from './create-project-dialog'
 import type { ProjectTableItem } from './datatable/projects-table.types'
+import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +33,7 @@ function Projects() {
   const [deletingProject, setDeletingProject] =
     useState<ProjectTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [createProjectOpen, setCreateProjectOpen] = useState(false)
 
   const handleEdit = (project: ProjectTableItem) => {
     setEditingProject(project)
@@ -73,10 +77,18 @@ function Projects() {
   return (
     <>
       <div className="mb-6 px-4 lg:px-6">
-        <h1 className="text-2xl font-semibold">Projects</h1>
-        <p className="text-muted-foreground">
-          Manage projects and their environments
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Projects</h1>
+            <p className="text-muted-foreground">
+              Manage projects and their environments
+            </p>
+          </div>
+          <Button onClick={() => setCreateProjectOpen(true)}>
+            <CirclePlus className="size-4" />
+            Create New Project
+          </Button>
+        </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
         <ProjectsTable
@@ -85,6 +97,10 @@ function Projects() {
           onDelete={handleDelete}
         />
       </Suspense>
+      <CreateProjectDialog
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+      />
       <EditProjectDialog
         project={editingProject}
         open={!!editingProject}
