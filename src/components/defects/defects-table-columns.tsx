@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef, Table as TanstackTable } from '@tanstack/react-table'
@@ -57,7 +57,7 @@ function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
     critical: 'destructive',
     high: 'destructive',
     medium: 'default',
-    low: 'secondary',
+    cosmetic: 'secondary',
   } as const
 
   return (
@@ -70,9 +70,10 @@ function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
 function StatusCell({ row }: { row: { original: DefectTableItem } }) {
   const statusColors = {
     open: 'default',
-    'in-progress': 'secondary',
-    resolved: 'default',
-    closed: 'outline',
+    fixed: 'secondary',
+    verified: 'default',
+    reopened: 'destructive',
+    deferred: 'outline',
   } as const
 
   return (
@@ -82,17 +83,70 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
   )
 }
 
-function AttachmentsCell({ row }: { row: { original: DefectTableItem } }) {
-  const count = row.original.attachments.length
+function ScreenshotCell({ row }: { row: { original: DefectTableItem } }) {
+  const hasScreenshot = !!row.original.screenshot
   return (
     <div className="text-muted-foreground text-sm">
-      {count === 0 ? (
-        <span>No attachments</span>
-      ) : (
-        <span>
-          {count} {count === 1 ? 'file' : 'files'}
-        </span>
-      )}
+      {hasScreenshot ? <span>Has screenshot</span> : <span>No screenshot</span>}
+    </div>
+  )
+}
+
+function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
+  return (
+    <div className="text-sm font-medium">{row.original.projectName}</div>
+  )
+}
+
+function ModuleCell({ row }: { row: { original: DefectTableItem } }) {
+  return (
+    <div className="text-sm">{row.original.module}</div>
+  )
+}
+
+function DefectTypeCell({ row }: { row: { original: DefectTableItem } }) {
+  return (
+    <Badge variant={row.original.defectType === 'bug' ? 'destructive' : 'default'}>
+      {row.original.defectType}
+    </Badge>
+  )
+}
+
+function AssignedToCell({ row }: { row: { original: DefectTableItem } }) {
+  return (
+    <div className="text-sm text-muted-foreground">
+      {row.original.assignedToName || 'Unassigned'}
+    </div>
+  )
+}
+
+function ReporterCell({ row }: { row: { original: DefectTableItem } }) {
+  return (
+    <div className="text-sm text-muted-foreground">{row.original.reporterName}</div>
+  )
+}
+
+function FlagsCell({ row }: { row: { original: DefectTableItem } }) {
+  const flags = row.original.flags || []
+  if (flags.length === 0) {
+    return <div className="text-sm text-muted-foreground">No flags</div>
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {flags.map((flag, index) => (
+        <Badge key={index} variant="outline" className="text-xs">
+          {flag}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
+function CommentsCell({ row }: { row: { original: DefectTableItem } }) {
+  const count = row.original.comments?.length ?? 0
+  return (
+    <div className="text-sm text-muted-foreground">
+      {count === 0 ? 'No comments' : `${count} comment${count === 1 ? '' : 's'}`}
     </div>
   )
 }
@@ -109,13 +163,24 @@ function ActionsCell({
   row,
   onEdit,
   onDelete,
+  onAddComment,
 }: {
   row: { original: DefectTableItem }
   onEdit: (defect: DefectTableItem) => void
   onDelete: (defect: DefectTableItem) => void
+  onAddComment: (defect: DefectTableItem) => void
 }) {
   return (
     <div className="flex items-center justify-end gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8"
+        onClick={() => onAddComment(row.original)}
+        aria-label="Add comment"
+      >
+        <MessageSquare className="size-4" />
+      </Button>
       <Button
         variant="ghost"
         size="icon"
@@ -141,6 +206,7 @@ function ActionsCell({
 export function createColumns(
   onEdit: (defect: DefectTableItem) => void,
   onDelete: (defect: DefectTableItem) => void,
+  onAddComment: (defect: DefectTableItem) => void,
 ): Array<ColumnDef<DefectTableItem>> {
   return [
     {
@@ -155,6 +221,21 @@ export function createColumns(
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
       enableHiding: false,
+    },
+    {
+      accessorKey: 'projectId',
+      header: 'Project',
+      cell: ({ row }) => <ProjectCell row={row} />,
+    },
+    {
+      accessorKey: 'module',
+      header: 'Module',
+      cell: ({ row }) => <ModuleCell row={row} />,
+    },
+    {
+      accessorKey: 'defectType',
+      header: 'Type',
+      cell: ({ row }) => <DefectTypeCell row={row} />,
     },
     {
       accessorKey: 'description',
@@ -172,9 +253,29 @@ export function createColumns(
       cell: ({ row }) => <StatusCell row={row} />,
     },
     {
-      accessorKey: 'attachments',
-      header: 'Attachments',
-      cell: ({ row }) => <AttachmentsCell row={row} />,
+      accessorKey: 'assignedTo',
+      header: 'Assigned To',
+      cell: ({ row }) => <AssignedToCell row={row} />,
+    },
+    {
+      accessorKey: 'reporterId',
+      header: 'Reporter',
+      cell: ({ row }) => <ReporterCell row={row} />,
+    },
+    {
+      accessorKey: 'flags',
+      header: 'Flags',
+      cell: ({ row }) => <FlagsCell row={row} />,
+    },
+    {
+      accessorKey: 'screenshot',
+      header: 'Screenshot',
+      cell: ({ row }) => <ScreenshotCell row={row} />,
+    },
+    {
+      accessorKey: 'comments',
+      header: 'Comments',
+      cell: ({ row }) => <CommentsCell row={row} />,
     },
     {
       accessorKey: '_creationTime',
@@ -185,7 +286,12 @@ export function createColumns(
       id: 'actions',
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <ActionsCell row={row} onEdit={onEdit} onDelete={onDelete} />
+        <ActionsCell
+          row={row}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onAddComment={onAddComment}
+        />
       ),
       enableSorting: false,
     },

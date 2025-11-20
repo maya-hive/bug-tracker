@@ -31,10 +31,12 @@ export function DefectsTable({
   data: initialData,
   onEdit,
   onDelete,
+  onAddComment,
 }: {
   data: Array<DefectTableItem>
   onEdit: (defect: DefectTableItem) => void
   onDelete: (defect: DefectTableItem) => void
+  onAddComment: (defect: DefectTableItem) => void
 }) {
   const [data, setData] = React.useState(() => initialData)
 
@@ -55,8 +57,8 @@ export function DefectsTable({
   })
 
   const columns = React.useMemo(
-    () => createColumns(onEdit, onDelete),
-    [onEdit, onDelete],
+    () => createColumns(onEdit, onDelete, onAddComment),
+    [onEdit, onDelete, onAddComment],
   )
 
   const table = useReactTable({

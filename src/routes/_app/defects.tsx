@@ -7,6 +7,7 @@ import { CirclePlus } from 'lucide-react'
 import { DefectsTable } from '../../components/defects/defects-table'
 import { EditDefectDialog } from '../../components/defects/edit-defect-dialog'
 import { CreateDefectDialog } from '../../components/defects/create-defect-dialog'
+import { AddCommentDialog } from '../../components/defects/add-comment-dialog'
 import type { DefectTableItem } from '../../components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -34,6 +35,8 @@ function Defects() {
   const [deletingDefect, setDeletingDefect] = useState<DefectTableItem | null>(
     null,
   )
+  const [commentingDefect, setCommentingDefect] =
+    useState<DefectTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [createDefectOpen, setCreateDefectOpen] = useState(false)
 
@@ -43,6 +46,10 @@ function Defects() {
 
   const handleDelete = (defect: DefectTableItem) => {
     setDeletingDefect(defect)
+  }
+
+  const handleAddComment = (defect: DefectTableItem) => {
+    setCommentingDefect(defect)
   }
 
   const confirmDelete = async () => {
@@ -72,11 +79,21 @@ function Defects() {
   const defectsData: Array<DefectTableItem> = defects.map((defect) => ({
     _id: defect._id,
     _creationTime: defect._creationTime,
+    projectId: defect.projectId,
+    projectName: defect.projectName,
     name: defect.name,
+    module: defect.module,
+    defectType: defect.defectType,
     description: defect.description,
-    attachments: defect.attachments,
+    screenshot: defect.screenshot,
+    assignedTo: defect.assignedTo,
+    assignedToName: defect.assignedToName,
+    reporterId: defect.reporterId,
+    reporterName: defect.reporterName,
     severity: defect.severity,
+    flags: defect.flags,
     status: defect.status,
+    comments: defect.comments,
   }))
 
   return (
@@ -100,6 +117,7 @@ function Defects() {
           data={defectsData}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onAddComment={handleAddComment}
         />
       </Suspense>
       <CreateDefectDialog
@@ -110,6 +128,11 @@ function Defects() {
         defect={editingDefect}
         open={!!editingDefect}
         onOpenChange={(open) => !open && setEditingDefect(null)}
+      />
+      <AddCommentDialog
+        defect={commentingDefect}
+        open={!!commentingDefect}
+        onOpenChange={(open) => !open && setCommentingDefect(null)}
       />
       <AlertDialog
         open={!!deletingDefect}

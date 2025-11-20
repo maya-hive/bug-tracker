@@ -21,11 +21,21 @@ function Dashboard() {
   const defectsData: Array<DefectTableItem> = defects.map((defect) => ({
     _id: defect._id,
     _creationTime: defect._creationTime,
+    projectId: defect.projectId,
+    projectName: defect.projectName,
     name: defect.name,
+    module: defect.module,
+    defectType: defect.defectType,
     description: defect.description,
-    attachments: defect.attachments,
+    screenshot: defect.screenshot,
+    assignedTo: defect.assignedTo,
+    assignedToName: defect.assignedToName,
+    reporterId: defect.reporterId,
+    reporterName: defect.reporterName,
     severity: defect.severity,
+    flags: defect.flags,
     status: defect.status,
+    comments: defect.comments,
   }))
 
   return (
@@ -39,7 +49,12 @@ function Dashboard() {
 const Table = ({ data }: { data: any }) => (
   <div className="mt-6">
     <Suspense fallback={<div>Loading...</div>}>
-      <DefectsTable data={data} onEdit={() => {}} onDelete={() => {}} />
+      <DefectsTable
+        data={data}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onAddComment={() => {}}
+      />
     </Suspense>
   </div>
 )
