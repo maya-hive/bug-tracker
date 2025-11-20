@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 
 import { useMutation } from 'convex/react'
@@ -19,13 +18,11 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '~/components/ui/form'
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
 
 const editUserSchema = z.object({
   name: z.string().optional().or(z.literal('')),
@@ -36,8 +33,6 @@ const editUserSchema = z.object({
     .optional()
     .or(z.literal('')),
 })
-
-type EditUserFormValues = z.infer<typeof editUserSchema>
 
 export function EditUserDialog({
   user,
@@ -51,12 +46,43 @@ export function EditUserDialog({
   const updateUser = useMutation(api.users.updateUser)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<EditUserFormValues>({
-    resolver: zodResolver(editUserSchema),
+  const form = useForm({
     defaultValues: {
       name: '',
       email: '',
       newPassword: '',
+    },
+    validators: {
+      onSubmit: editUserSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!user) return
+
+      setIsSubmitting(true)
+      try {
+        await updateUser({
+          userId: user._id as Id<'users'>,
+          name: value.name || undefined,
+          email: value.email,
+        })
+
+        // Note: Password change is not implemented in the mutation yet
+        // You'll need to implement it separately or through the auth API
+        if (value.newPassword) {
+          toast.info(
+            'Password change is not yet implemented. Please use the auth API.',
+          )
+        }
+
+        toast.success('User updated successfully')
+        onOpenChange(false)
+        form.reset()
+      } catch (error) {
+        toast.error('Failed to update user')
+        console.error(error)
+      } finally {
+        setIsSubmitting(false)
+      }
     },
   })
 
@@ -71,36 +97,6 @@ export function EditUserDialog({
     }
   }, [user, open, form])
 
-  const onSubmit = async (values: EditUserFormValues) => {
-    if (!user) return
-
-    setIsSubmitting(true)
-    try {
-      await updateUser({
-        userId: user._id as Id<'users'>,
-        name: values.name || undefined,
-        email: values.email,
-      })
-
-      // Note: Password change is not implemented in the mutation yet
-      // You'll need to implement it separately or through the auth API
-      if (values.newPassword) {
-        toast.info(
-          'Password change is not yet implemented. Please use the auth API.',
-        )
-      }
-
-      toast.success('User updated successfully')
-      onOpenChange(false)
-      form.reset()
-    } catch (error) {
-      toast.error('Failed to update user')
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   if (!user) return null
 
   return (
@@ -113,66 +109,113 @@ export function EditUserDialog({
             password.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="space-y-4"
+        >
+          <FieldGroup>
+            <form.Field
               name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password (optional)</FormLabel>
-                  <FormControl>
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                     <Input
+                      id={field.name}
+                      name={field.name}
+                      placeholder="Enter name"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="email"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      placeholder="Enter email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="newPassword"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.value !== '' &&
+                  !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      New Password (optional)
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
                       type="password"
                       placeholder="Leave empty to keep current password"
-                      {...field}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </FieldGroup>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || form.state.isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

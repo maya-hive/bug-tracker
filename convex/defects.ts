@@ -15,6 +15,19 @@ export const generateUploadUrl = mutation({
 })
 
 /**
+ * Get a file URL from storage ID
+ */
+export const getFileUrl = query({
+  args: {
+    storageId: v.id('_storage'),
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId)
+  },
+})
+
+/**
  * List all defects
  */
 export const listDefects = query({

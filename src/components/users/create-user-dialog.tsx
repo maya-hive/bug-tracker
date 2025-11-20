@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 
 import { useMutation } from 'convex/react'
@@ -17,21 +16,17 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '~/components/ui/form'
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
 
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
-
-type CreateUserFormValues = z.infer<typeof createUserSchema>
 
 export function CreateUserDialog({
   open,
@@ -43,36 +38,37 @@ export function CreateUserDialog({
   const createUser = useMutation(api.users.createUser)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<CreateUserFormValues>({
-    resolver: zodResolver(createUserSchema),
+  const form = useForm({
     defaultValues: {
       name: '',
       email: '',
       password: '',
     },
+    validators: {
+      onSubmit: createUserSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setIsSubmitting(true)
+      try {
+        await createUser({
+          name: value.name,
+          email: value.email,
+          password: value.password,
+        })
+
+        toast.success('User created successfully')
+        onOpenChange(false)
+        form.reset()
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to create user'
+        toast.error(errorMessage)
+        console.error(error)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
   })
-
-  const onSubmit = async (values: CreateUserFormValues) => {
-    setIsSubmitting(true)
-    try {
-      await createUser({
-        name: values.name,
-        email: values.email,
-        password: values.password,
-      })
-
-      toast.success('User created successfully')
-      onOpenChange(false)
-      form.reset()
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to create user'
-      toast.error(errorMessage)
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -83,69 +79,112 @@ export function CreateUserDialog({
             Create a new user with name, email, and password.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="space-y-4"
+        >
+          <FieldGroup>
+            <form.Field
               name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                     <Input
+                      id={field.name}
+                      name={field.name}
+                      placeholder="Enter name"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="email"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      placeholder="Enter email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="password"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
                       type="password"
                       placeholder="Enter password (min 8 characters)"
-                      {...field}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false)
-                  form.reset()
-                }}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create User'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </FieldGroup>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+                form.reset()
+              }}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || form.state.isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

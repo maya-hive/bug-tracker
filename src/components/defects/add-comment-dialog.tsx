@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 
 import { useMutation } from 'convex/react'
@@ -18,20 +17,11 @@ import {
 } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
 import { Textarea } from '~/components/ui/textarea'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '~/components/ui/form'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 const addCommentSchema = z.object({
   text: z.string().min(1, 'Comment is required'),
 })
-
-type AddCommentFormValues = z.infer<typeof addCommentSchema>
 
 export function AddCommentDialog({
   defect,
@@ -45,33 +35,34 @@ export function AddCommentDialog({
   const addComment = useMutation(api.defects.addComment)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<AddCommentFormValues>({
-    resolver: zodResolver(addCommentSchema),
+  const form = useForm({
     defaultValues: {
       text: '',
     },
+    validators: {
+      onSubmit: addCommentSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!defect) return
+
+      setIsSubmitting(true)
+      try {
+        await addComment({
+          defectId: defect._id as Id<'defects'>,
+          text: value.text,
+        })
+
+        toast.success('Comment added successfully')
+        onOpenChange(false)
+        form.reset()
+      } catch (error) {
+        toast.error('Failed to add comment')
+        console.error(error)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
   })
-
-  const onSubmit = async (values: AddCommentFormValues) => {
-    if (!defect) return
-
-    setIsSubmitting(true)
-    try {
-      await addComment({
-        defectId: defect._id as Id<'defects'>,
-        text: values.text,
-      })
-
-      toast.success('Comment added successfully')
-      onOpenChange(false)
-      form.reset()
-    } catch (error) {
-      toast.error('Failed to add comment')
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   if (!defect) return null
 
@@ -84,45 +75,58 @@ export function AddCommentDialog({
             Add a comment to defect: {defect.name}
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="text"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comment</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter your comment..."
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false)
-                  form.reset()
-                }}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Adding...' : 'Add Comment'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="space-y-4"
+        >
+          <form.Field
+            name="text"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Comment</FieldLabel>
+                  <Textarea
+                    id={field.name}
+                    name={field.name}
+                    placeholder="Enter your comment..."
+                    className="min-h-[120px]"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                    disabled={isSubmitting}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+                form.reset()
+              }}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || form.state.isSubmitting}
+            >
+              {isSubmitting ? 'Adding...' : 'Add Comment'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
 }
-

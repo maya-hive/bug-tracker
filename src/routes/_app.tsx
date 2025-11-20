@@ -3,7 +3,7 @@ import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
 import { api } from 'convex/_generated/api'
 import { useQuery } from 'convex/react'
 
-import type { User } from '~/types/user'
+import type { User } from '~/types/user.type'
 import { TaskHeader } from '~/components/layout/header'
 import { AuthUserContext } from '~/contexts/use-auth-user'
 

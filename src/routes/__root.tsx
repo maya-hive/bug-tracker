@@ -5,9 +5,11 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import * as React from 'react'
+import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
 import { ThemeProvider } from '~/providers/theme-provider'
+import { Toaster } from '~/components/ui/sonner'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -55,7 +57,9 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <NuqsAdapter>
+        <Outlet />
+      </NuqsAdapter>
     </RootDocument>
   )
 }
@@ -67,7 +71,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster position="top-center" />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>

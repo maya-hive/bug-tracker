@@ -1,4 +1,4 @@
-import { Pencil, Trash2, MessageSquare } from 'lucide-react'
+import { MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef, Table as TanstackTable } from '@tanstack/react-table'
@@ -93,20 +93,18 @@ function ScreenshotCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
-  return (
-    <div className="text-sm font-medium">{row.original.projectName}</div>
-  )
+  return <div className="text-sm font-medium">{row.original.projectName}</div>
 }
 
 function ModuleCell({ row }: { row: { original: DefectTableItem } }) {
-  return (
-    <div className="text-sm">{row.original.module}</div>
-  )
+  return <div className="text-sm">{row.original.module}</div>
 }
 
 function DefectTypeCell({ row }: { row: { original: DefectTableItem } }) {
   return (
-    <Badge variant={row.original.defectType === 'bug' ? 'destructive' : 'default'}>
+    <Badge
+      variant={row.original.defectType === 'bug' ? 'destructive' : 'default'}
+    >
       {row.original.defectType}
     </Badge>
   )
@@ -122,12 +120,14 @@ function AssignedToCell({ row }: { row: { original: DefectTableItem } }) {
 
 function ReporterCell({ row }: { row: { original: DefectTableItem } }) {
   return (
-    <div className="text-sm text-muted-foreground">{row.original.reporterName}</div>
+    <div className="text-sm text-muted-foreground">
+      {row.original.reporterName}
+    </div>
   )
 }
 
 function FlagsCell({ row }: { row: { original: DefectTableItem } }) {
-  const flags = row.original.flags || []
+  const flags = row.original.flags
   if (flags.length === 0) {
     return <div className="text-sm text-muted-foreground">No flags</div>
   }
@@ -146,7 +146,9 @@ function CommentsCell({ row }: { row: { original: DefectTableItem } }) {
   const count = row.original.comments?.length ?? 0
   return (
     <div className="text-sm text-muted-foreground">
-      {count === 0 ? 'No comments' : `${count} comment${count === 1 ? '' : 's'}`}
+      {count === 0
+        ? 'No comments'
+        : `${count} comment${count === 1 ? '' : 's'}`}
     </div>
   )
 }
@@ -207,8 +209,9 @@ export function createColumns(
   onEdit: (defect: DefectTableItem) => void,
   onDelete: (defect: DefectTableItem) => void,
   onAddComment: (defect: DefectTableItem) => void,
+  showActions: boolean = true,
 ): Array<ColumnDef<DefectTableItem>> {
-  return [
+  const columns: Array<ColumnDef<DefectTableItem>> = [
     {
       id: 'select',
       header: ({ table }) => <SelectCell table={table} />,
@@ -282,7 +285,10 @@ export function createColumns(
       header: 'Created',
       cell: ({ row }) => <CreatedDateCell row={row} />,
     },
-    {
+  ]
+
+  if (showActions) {
+    columns.push({
       id: 'actions',
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
@@ -294,6 +300,8 @@ export function createColumns(
         />
       ),
       enableSorting: false,
-    },
-  ]
+    })
+  }
+
+  return columns
 }

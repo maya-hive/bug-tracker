@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Upload, X } from 'lucide-react'
 
@@ -22,13 +21,11 @@ import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import { Checkbox } from '~/components/ui/checkbox'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '~/components/ui/form'
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -36,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { ScrollArea } from '~/components/ui/scroll-area'
 
 const editDefectSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
@@ -48,8 +46,6 @@ const editDefectSchema = z.object({
   flags: z.array(z.enum(['unit test failure', 'content issue'])).optional(),
   status: z.enum(['open', 'fixed', 'verified', 'reopened', 'deferred']),
 })
-
-type EditDefectFormValues = z.infer<typeof editDefectSchema>
 
 export function EditDefectDialog({
   defect,
@@ -68,18 +64,54 @@ export function EditDefectDialog({
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
 
-  const form = useForm<EditDefectFormValues>({
-    resolver: zodResolver(editDefectSchema),
+  const form = useForm({
     defaultValues: {
-      projectId: '',
-      name: '',
-      module: '',
-      defectType: 'bug',
-      description: '',
-      assignedTo: '__unassigned__',
-      severity: 'medium',
-      flags: [],
-      status: 'open',
+      projectId: defect?.projectId || '',
+      name: defect?.name || '',
+      module: defect?.module || '',
+      defectType: defect?.defectType || 'bug',
+      description: defect?.description || '',
+      assignedTo: defect?.assignedTo || '__unassigned__',
+      severity: defect?.severity || 'medium',
+      flags: defect?.flags || [],
+      status: defect?.status || 'open',
+    },
+    validators: {
+      // @ts-expect-error - TanStack Form type inference doesn't fully support zod optional fields
+      onSubmit: editDefectSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!defect) return
+
+      setIsSubmitting(true)
+      try {
+        await updateDefect({
+          defectId: defect._id as Id<'defects'>,
+          projectId: value.projectId as Id<'projects'>,
+          name: value.name,
+          module: value.module,
+          defectType: value.defectType,
+          description: value.description,
+          assignedTo:
+            value.assignedTo && value.assignedTo !== '__unassigned__'
+              ? (value.assignedTo as Id<'users'>)
+              : undefined,
+          severity: value.severity,
+          flags: value.flags,
+          status: value.status,
+          screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
+        })
+
+        toast.success('Defect updated successfully')
+        onOpenChange(false)
+        form.reset()
+        setScreenshot(null)
+      } catch (error) {
+        toast.error('Failed to update defect')
+        console.error(error)
+      } finally {
+        setIsSubmitting(false)
+      }
     },
   })
 
@@ -94,10 +126,14 @@ export function EditDefectDialog({
         description: defect.description,
         assignedTo: defect.assignedTo || '__unassigned__',
         severity: defect.severity,
-        flags: defect.flags || [],
+        flags: defect.flags,
         status: defect.status,
       })
       setScreenshot(defect.screenshot || null)
+    } else if (!open) {
+      // Reset form when dialog closes
+      form.reset()
+      setScreenshot(null)
     }
   }, [defect, open, form])
 
@@ -136,370 +172,446 @@ export function EditDefectDialog({
     setScreenshot(null)
   }
 
-  const onSubmit = async (values: EditDefectFormValues) => {
-    if (!defect) return
-
-    setIsSubmitting(true)
-    try {
-      await updateDefect({
-        defectId: defect._id as Id<'defects'>,
-        projectId: values.projectId as Id<'projects'>,
-        name: values.name,
-        module: values.module,
-        defectType: values.defectType,
-        description: values.description,
-        assignedTo:
-          values.assignedTo && values.assignedTo !== '__unassigned__'
-            ? (values.assignedTo as Id<'users'>)
-            : undefined,
-        severity: values.severity,
-        flags: values.flags,
-        status: values.status,
-        screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
-      })
-
-      toast.success('Defect updated successfully')
-      onOpenChange(false)
-      form.reset()
-      setScreenshot(null)
-    } catch (error) {
-      toast.error('Failed to update defect')
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   if (!defect) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Edit Defect</DialogTitle>
-          <DialogDescription>Update defect information.</DialogDescription>
+          <DialogDescription>
+            Update defect information and attachment.
+          </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="projectId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {projects?.map((project) => (
-                        <SelectItem key={project._id} value={project._id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter defect name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="module"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Module</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter module name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="defectType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Defect Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="bug">Bug</SelectItem>
-                      <SelectItem value="improvement">Improvement</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter defect description"
-                      className="min-h-[100px]"
-                      {...field}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+        >
+          <ScrollArea className="h-[60vh] pr-4">
+            <FieldGroup className="space-y-4">
+              <form.Field
+                name="projectId"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Project</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value)}
+                      >
+                        <SelectTrigger
+                          id={field.name}
+                          className="w-full"
+                          aria-invalid={isInvalid}
+                        >
+                          <SelectValue placeholder="Select project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects?.map((project) => (
+                            <SelectItem key={project._id} value={project._id}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form.Field
+                  name="name"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          placeholder="Enter defect name"
+                          className="w-full"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                          disabled={isSubmitting}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+                <form.Field
+                  name="module"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Module</FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          placeholder="Enter module name"
+                          className="w-full"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                          disabled={isSubmitting}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+              </div>
+              <form.Field
+                name="description"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Enter defect description"
+                        className="min-h-[100px] w-full"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        disabled={isSubmitting}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form.Field
+                  name="defectType"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>
+                          Defect Type
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(value as 'bug' | 'improvement')
+                          }
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bug">Bug</SelectItem>
+                            <SelectItem value="improvement">
+                              Improvement
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+                <form.Field
+                  name="assignedTo"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>
+                          Assigned To
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value)}
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder="Select user (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__unassigned__">
+                              Unassigned
+                            </SelectItem>
+                            {users?.map((user) => (
+                              <SelectItem key={user._id} value={user._id}>
+                                {user.name || user.email || user._id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+                <form.Field
+                  name="severity"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Severity</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(
+                              value as
+                                | 'cosmetic'
+                                | 'medium'
+                                | 'high'
+                                | 'critical',
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder="Select severity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="critical">Critical</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="cosmetic">Cosmetic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+                <form.Field
+                  name="status"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(
+                              value as
+                                | 'open'
+                                | 'fixed'
+                                | 'verified'
+                                | 'reopened'
+                                | 'deferred',
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="verified">Verified</SelectItem>
+                            <SelectItem value="reopened">Reopened</SelectItem>
+                            <SelectItem value="deferred">Deferred</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+              </div>
+              <form.Field
+                name="flags"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel>Flags</FieldLabel>
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex flex-row items-start space-x-2">
+                          <Checkbox
+                            id="flag-unit-test-edit"
+                            checked={field.state.value.includes(
+                              'unit test failure',
+                            )}
+                            onCheckedChange={(checked) => {
+                              const currentFlags = field.state.value
+                              if (checked) {
+                                field.handleChange([
+                                  ...currentFlags,
+                                  'unit test failure',
+                                ])
+                              } else {
+                                field.handleChange(
+                                  currentFlags.filter(
+                                    (value) => value !== 'unit test failure',
+                                  ),
+                                )
+                              }
+                            }}
+                            disabled={isSubmitting}
+                          />
+                          <label
+                            htmlFor="flag-unit-test-edit"
+                            className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            Unit Test Failure
+                          </label>
+                        </div>
+                        <div className="flex flex-row items-start space-x-2">
+                          <Checkbox
+                            id="flag-content-issue-edit"
+                            checked={field.state.value.includes(
+                              'content issue',
+                            )}
+                            onCheckedChange={(checked) => {
+                              const currentFlags = field.state.value
+                              if (checked) {
+                                field.handleChange([
+                                  ...currentFlags,
+                                  'content issue',
+                                ])
+                              } else {
+                                field.handleChange(
+                                  currentFlags.filter(
+                                    (value) => value !== 'content issue',
+                                  ),
+                                )
+                              }
+                            }}
+                            disabled={isSubmitting}
+                          />
+                          <label
+                            htmlFor="flag-content-issue-edit"
+                            className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            Content Issue
+                          </label>
+                        </div>
+                      </div>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+              <Field>
+                <FieldLabel>Screenshot</FieldLabel>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e.target.files)}
+                      disabled={uploadingFile}
+                      className="hidden"
+                      id="file-upload-edit"
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="assignedTo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assigned To</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__unassigned__">Unassigned</SelectItem>
-                      {users?.map((user) => (
-                        <SelectItem key={user._id} value={user._id}>
-                          {user.name || user.email || user._id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="flags"
-              render={() => (
-                <FormItem>
-                  <div className="mb-4">
-                    <FormLabel className="text-base">Flags</FormLabel>
-                    <div className="mt-2 space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="flags"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(
-                                    'unit test failure',
-                                  )}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...(field.value || []),
-                                          'unit test failure',
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) =>
-                                              value !== 'unit test failure',
-                                          ),
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="font-normal">
-                                  Unit Test Failure
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="flags"
-                        render={({ field }) => {
-                          return (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes('content issue')}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...(field.value || []),
-                                          'content issue',
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== 'content issue',
-                                          ),
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="font-normal">
-                                  Content Issue
-                                </FormLabel>
-                              </div>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    </div>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="severity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Severity</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select severity" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="critical">Critical</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="cosmetic">Cosmetic</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="fixed">Fixed</SelectItem>
-                        <SelectItem value="verified">Verified</SelectItem>
-                        <SelectItem value="reopened">Reopened</SelectItem>
-                        <SelectItem value="deferred">Deferred</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormItem>
-              <FormLabel>Screenshot</FormLabel>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(e.target.files)}
-                    disabled={uploadingFile}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      document.getElementById('file-upload')?.click()
-                    }
-                    disabled={uploadingFile}
-                  >
-                    <Upload className="size-4 mr-2" />
-                    {uploadingFile ? 'Uploading...' : 'Upload Screenshot'}
-                  </Button>
-                </div>
-                {screenshot && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md w-fit">
-                    <span className="text-sm">Screenshot attached</span>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-5"
-                      onClick={removeScreenshot}
+                      variant="outline"
+                      onClick={() => {
+                        const fileInput =
+                          document.getElementById('file-upload-edit')
+                        fileInput?.click()
+                      }}
+                      disabled={uploadingFile}
+                      className="w-full sm:w-auto"
                     >
-                      <X className="size-3" />
+                      <Upload className="size-4 mr-2" />
+                      {uploadingFile ? 'Uploading...' : 'Upload Screenshot'}
                     </Button>
                   </div>
-                )}
-              </div>
-            </FormItem>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false)
-                  setScreenshot(null)
-                }}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting || uploadingFile}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                  {screenshot && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md w-full justify-between">
+                      <span className="text-sm">Screenshot attached</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 h-6"
+                        onClick={removeScreenshot}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Field>
+            </FieldGroup>
+          </ScrollArea>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false)
+                form.reset()
+                setScreenshot(null)
+              }}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                isSubmitting || uploadingFile || form.state.isSubmitting
+              }
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

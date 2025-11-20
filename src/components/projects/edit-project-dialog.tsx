@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 
 import { useMutation } from 'convex/react'
@@ -19,13 +18,11 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '~/components/ui/form'
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -39,8 +36,6 @@ const editProjectSchema = z.object({
   environment: z.enum(['live', 'staging', 'dev']),
 })
 
-type EditProjectFormValues = z.infer<typeof editProjectSchema>
-
 export function EditProjectDialog({
   project,
   open,
@@ -53,11 +48,34 @@ export function EditProjectDialog({
   const updateProject = useMutation(api.projects.updateProject)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<EditProjectFormValues>({
-    resolver: zodResolver(editProjectSchema),
+  const form = useForm({
     defaultValues: {
       name: '',
-      environment: 'dev',
+      environment: 'dev' as const,
+    },
+    validators: {
+      onSubmit: editProjectSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!project) return
+
+      setIsSubmitting(true)
+      try {
+        await updateProject({
+          projectId: project._id as Id<'projects'>,
+          name: value.name,
+          environment: value.environment,
+        })
+
+        toast.success('Project updated successfully')
+        onOpenChange(false)
+        form.reset()
+      } catch (error) {
+        toast.error('Failed to update project')
+        console.error(error)
+      } finally {
+        setIsSubmitting(false)
+      }
     },
   })
 
@@ -71,28 +89,6 @@ export function EditProjectDialog({
     }
   }, [project, open, form])
 
-  const onSubmit = async (values: EditProjectFormValues) => {
-    if (!project) return
-
-    setIsSubmitting(true)
-    try {
-      await updateProject({
-        projectId: project._id as Id<'projects'>,
-        name: values.name,
-        environment: values.environment,
-      })
-
-      toast.success('Project updated successfully')
-      onOpenChange(false)
-      form.reset()
-    } catch (error) {
-      toast.error('Failed to update project')
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   if (!project) return null
 
   return (
@@ -102,62 +98,87 @@ export function EditProjectDialog({
           <DialogTitle>Edit Project</DialogTitle>
           <DialogDescription>Update project information.</DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="space-y-4"
+        >
+          <FieldGroup>
+            <form.Field
               name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter project name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      placeholder="Enter project name"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      disabled={isSubmitting}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
-            <FormField
-              control={form.control}
+            <form.Field
               name="environment"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Environment</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Environment</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) =>
+                        field.handleChange(value as 'live' | 'staging' | 'dev')
+                      }
+                    >
+                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                         <SelectValue placeholder="Select environment" />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="live">Live</SelectItem>
-                      <SelectItem value="staging">Staging</SelectItem>
-                      <SelectItem value="dev">Dev</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+                      <SelectContent>
+                        <SelectItem value="live">Live</SelectItem>
+                        <SelectItem value="staging">Staging</SelectItem>
+                        <SelectItem value="dev">Dev</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </FieldGroup>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || form.state.isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

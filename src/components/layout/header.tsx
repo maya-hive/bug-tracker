@@ -1,15 +1,17 @@
-import { Bug, ChevronsUpDown } from 'lucide-react'
+import { Bug, ChevronsUpDown, Link } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
-import type { Id } from 'convex/_generated/dataModel'
+import { toast } from 'sonner'
 
 import { ModeToggle } from '~/components/mode-toggle'
 import { NavUser } from '~/components/nav-user'
 import { UserPresence } from '~/components/user-presence'
 import { useAuthUser } from '~/contexts/use-auth-user'
 import { NavMenu } from '~/components/layout/nav-menu'
+import { useProject } from '~/hooks/use-project'
 import { Button } from '~/components/ui/button'
+import { ButtonGroup } from '~/components/ui/button-group'
 import {
   Popover,
   PopoverContent,
@@ -27,10 +29,18 @@ import {
 export function TaskHeader() {
   const user = useAuthUser()
   const [open, setOpen] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Id<'projects'> | null>(
-    null,
-  )
+  const [selectedProject, setSelectedProject] = useProject()
   const projects = useQuery(api.projects.listProjects)
+
+  const handleCopyLink = async () => {
+    try {
+      const url = window.location.href
+      await navigator.clipboard.writeText(url)
+      toast.success('Project Link copied to clipboard')
+    } catch (error) {
+      toast.error('Failed to copy project link')
+    }
+  }
 
   return (
     <div className="border-b border-border bg-background">
@@ -53,55 +63,63 @@ export function TaskHeader() {
 
       <div className="flex items-center justify-between pl-1 pr-3 lg:pl-3 lg:pr-6 py-3 border-t border-border overflow-x-auto">
         <NavMenu />
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-[200px] justify-between"
-            >
-              {selectedProject && projects
-                ? projects.find((project) => project._id === selectedProject)
-                    ?.name
-                : 'All Projects'}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <Command>
-              <CommandInput placeholder="Search project..." />
-              <CommandList>
-                <CommandEmpty>No project found.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value="all"
-                    onSelect={() => {
-                      setSelectedProject(null)
-                      setOpen(false)
-                    }}
-                  >
-                    All Projects
-                  </CommandItem>
-                  {projects?.map((project) => (
+        <ButtonGroup>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-[200px] justify-between"
+              >
+                {selectedProject && projects
+                  ? projects.find((project) => project._id === selectedProject)
+                      ?.name
+                  : 'All Projects'}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput placeholder="Search project..." />
+                <CommandList>
+                  <CommandEmpty>No project found.</CommandEmpty>
+                  <CommandGroup>
                     <CommandItem
-                      key={project._id}
-                      value={project.name}
+                      value="all"
                       onSelect={() => {
-                        setSelectedProject(
-                          project._id === selectedProject ? null : project._id,
-                        )
+                        setSelectedProject(null)
                         setOpen(false)
                       }}
                     >
-                      {project.name}
+                      All Projects
                     </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                    {projects?.map((project) => (
+                      <CommandItem
+                        key={project._id}
+                        value={project.name}
+                        onSelect={() => {
+                          setSelectedProject(project._id)
+                          setOpen(false)
+                        }}
+                      >
+                        {project.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleCopyLink}
+            aria-label="Copy link"
+          >
+            <Link className="h-3 w-3" />
+          </Button>
+        </ButtonGroup>
       </div>
     </div>
   )

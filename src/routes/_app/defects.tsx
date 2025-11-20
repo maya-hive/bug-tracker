@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
@@ -10,6 +10,7 @@ import { CreateDefectDialog } from '../../components/defects/create-defect-dialo
 import { AddCommentDialog } from '../../components/defects/add-comment-dialog'
 import type { DefectTableItem } from '../../components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import { useProject } from '~/hooks/use-project'
 import { Button } from '~/components/ui/button'
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ export const Route = createFileRoute('/_app/defects')({
 
 function Defects() {
   const defects = useQuery(api.defects.listDefects)
+  const [projectId] = useProject()
   const deleteDefect = useMutation(api.defects.deleteDefect)
   const [editingDefect, setEditingDefect] = useState<DefectTableItem | null>(
     null,
@@ -68,6 +70,41 @@ function Defects() {
     }
   }
 
+  const defectsData: Array<DefectTableItem> = useMemo(() => {
+    if (defects === undefined) {
+      return []
+    }
+
+    return defects
+      .map((defect) => ({
+        _id: defect._id,
+        _creationTime: defect._creationTime,
+        projectId: defect.projectId,
+        projectName: defect.projectName,
+        name: defect.name,
+        module: defect.module,
+        defectType: defect.defectType,
+        description: defect.description,
+        screenshot: defect.screenshot,
+        assignedTo: defect.assignedTo,
+        assignedToName: defect.assignedToName,
+        reporterId: defect.reporterId,
+        reporterName: defect.reporterName,
+        severity: defect.severity,
+        flags: defect.flags,
+        status: defect.status,
+        comments: defect.comments,
+      }))
+      .filter((defect) => {
+        // If projectId is null (All Projects), show all defects
+        if (projectId === null) {
+          return true
+        }
+        // Otherwise, filter by projectId
+        return defect.projectId === projectId
+      })
+  }, [defects, projectId])
+
   if (defects === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -75,26 +112,6 @@ function Defects() {
       </div>
     )
   }
-
-  const defectsData: Array<DefectTableItem> = defects.map((defect) => ({
-    _id: defect._id,
-    _creationTime: defect._creationTime,
-    projectId: defect.projectId,
-    projectName: defect.projectName,
-    name: defect.name,
-    module: defect.module,
-    defectType: defect.defectType,
-    description: defect.description,
-    screenshot: defect.screenshot,
-    assignedTo: defect.assignedTo,
-    assignedToName: defect.assignedToName,
-    reporterId: defect.reporterId,
-    reporterName: defect.reporterName,
-    severity: defect.severity,
-    flags: defect.flags,
-    status: defect.status,
-    comments: defect.comments,
-  }))
 
   return (
     <>
@@ -118,6 +135,7 @@ function Defects() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAddComment={handleAddComment}
+          viewMode="cards"
         />
       </Suspense>
       <CreateDefectDialog

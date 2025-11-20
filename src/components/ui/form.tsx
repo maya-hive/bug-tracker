@@ -1,166 +1,164 @@
 'use client'
 
 import * as React from 'react'
-import { Slot } from '@radix-ui/react-slot'
+import { useForm } from '@tanstack/react-form'
+import { toast } from 'sonner'
+import * as z from 'zod'
+
+import { Button } from '~/components/ui/button'
 import {
-  Controller,
-  FormProvider,
-  useFormContext,
-  useFormState,
-} from 'react-hook-form'
-import type { ControllerProps, FieldPath, FieldValues } from 'react-hook-form'
-import type * as LabelPrimitive from '@radix-ui/react-label'
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
+import { Input } from '~/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupTextarea,
+} from '~/components/ui/input-group'
 
-import { cn } from '~/lib/utils'
-import { Label } from '~/components/ui/label'
+const formSchema = z.object({
+  title: z
+    .string()
+    .min(5, 'Bug title must be at least 5 characters.')
+    .max(32, 'Bug title must be at most 32 characters.'),
+  description: z
+    .string()
+    .min(20, 'Description must be at least 20 characters.')
+    .max(100, 'Description must be at most 100 characters.'),
+})
 
-const Form = FormProvider
-
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> = {
-  name: TName
-}
-
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue,
-)
-
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
-  return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  )
-}
-
-const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const itemContext = React.useContext(FormItemContext)
-  const { getFieldState } = useFormContext()
-  const formState = useFormState({ name: fieldContext.name })
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!fieldContext) {
-    throw new Error('useFormField should be used within <FormField>')
-  }
-
-  const { id } = itemContext
-
-  return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
-  }
-}
-
-type FormItemContextValue = {
-  id: string
-}
-
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue,
-)
-
-function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
-  const id = React.useId()
+export function BugReportForm() {
+  const form = useForm({
+    defaultValues: {
+      title: '',
+      description: '',
+    },
+    validators: {
+      onSubmit: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      toast('You submitted the following values:', {
+        description: (
+          <pre className="bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4">
+            <code>{JSON.stringify(value, null, 2)}</code>
+          </pre>
+        ),
+        position: 'bottom-right',
+        classNames: {
+          content: 'flex flex-col gap-2',
+        },
+        style: {
+          '--border-radius': 'calc(var(--radius)  + 4px)',
+        } as React.CSSProperties,
+      })
+    },
+  })
 
   return (
-    <FormItemContext.Provider value={{ id }}>
-      <div
-        data-slot="form-item"
-        className={cn('grid gap-2', className)}
-        {...props}
-      />
-    </FormItemContext.Provider>
+    <Card className="w-full sm:max-w-md">
+      <CardHeader>
+        <CardTitle>Bug Report</CardTitle>
+        <CardDescription>
+          Help us improve by reporting bugs you encounter.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          id="bug-report-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+        >
+          <FieldGroup>
+            <form.Field
+              name="title"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Bug Title</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      placeholder="Login button not working on mobile"
+                      autoComplete="off"
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="description"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Description</FieldLabel>
+                    <InputGroup>
+                      <InputGroupTextarea
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="I'm having an issue with the login button on mobile."
+                        rows={6}
+                        className="min-h-24 resize-none"
+                        aria-invalid={isInvalid}
+                      />
+                      <InputGroupAddon align="block-end">
+                        <InputGroupText className="tabular-nums">
+                          {field.state.value.length}/100 characters
+                        </InputGroupText>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    <FieldDescription>
+                      Include steps to reproduce, expected behavior, and what
+                      actually happened.
+                    </FieldDescription>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+          </FieldGroup>
+        </form>
+      </CardContent>
+      <CardFooter>
+        <Field orientation="horizontal">
+          <Button type="button" variant="outline" onClick={() => form.reset()}>
+            Reset
+          </Button>
+          <Button type="submit" form="bug-report-form">
+            Submit
+          </Button>
+        </Field>
+      </CardFooter>
+    </Card>
   )
-}
-
-function FormLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
-  const { error, formItemId } = useFormField()
-
-  return (
-    <Label
-      data-slot="form-label"
-      data-error={!!error}
-      className={cn('data-[error=true]:text-destructive', className)}
-      htmlFor={formItemId}
-      {...props}
-    />
-  )
-}
-
-function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
-
-  return (
-    <Slot
-      data-slot="form-control"
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={!!error}
-      {...props}
-    />
-  )
-}
-
-function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
-  const { formDescriptionId } = useFormField()
-
-  return (
-    <p
-      data-slot="form-description"
-      id={formDescriptionId}
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
-  )
-}
-
-function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error.message) : props.children
-
-  if (!body) {
-    return null
-  }
-
-  return (
-    <p
-      data-slot="form-message"
-      id={formMessageId}
-      className={cn('text-destructive text-sm', className)}
-      {...props}
-    >
-      {body}
-    </p>
-  )
-}
-
-export {
-  useFormField,
-  Form,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  FormField,
 }

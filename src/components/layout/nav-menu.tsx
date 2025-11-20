@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { Braces, Folders, Home, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -35,13 +35,16 @@ const navMenuItems = [
 ] as const satisfies ReadonlyArray<NavMenuItem>
 
 export function NavMenu() {
+  const location = useLocation()
+  const currentSearch = location.search
+
   return (
     <div className="flex items-center gap-2 shrink-0">
       {navMenuItems.map((item) => {
         const Icon = item.icon
         return (
           <Button key={item.to} variant="ghost" className="shadow-none" asChild>
-            <Link to={item.to}>
+            <Link to={item.to} search={currentSearch}>
               <Icon className="size-4" />
               {item.label}
             </Link>

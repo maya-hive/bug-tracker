@@ -12,6 +12,7 @@ import {
 import { createColumns } from './defects-table-columns'
 import { DefectsTablePagination } from './defects-table-pagination'
 import { DefectsTableToolbar } from './defects-table-toolbar'
+import { DefectCard } from './defect-card'
 import type { DefectTableItem } from './defects-table.types'
 import type {
   ColumnFiltersState,
@@ -32,11 +33,15 @@ export function DefectsTable({
   onEdit,
   onDelete,
   onAddComment,
+  viewMode = 'cards',
+  showActions = true,
 }: {
   data: Array<DefectTableItem>
   onEdit: (defect: DefectTableItem) => void
   onDelete: (defect: DefectTableItem) => void
   onAddComment: (defect: DefectTableItem) => void
+  viewMode?: 'table' | 'cards'
+  showActions?: boolean
 }) {
   const [data, setData] = React.useState(() => initialData)
 
@@ -57,8 +62,8 @@ export function DefectsTable({
   })
 
   const columns = React.useMemo(
-    () => createColumns(onEdit, onDelete, onAddComment),
-    [onEdit, onDelete, onAddComment],
+    () => createColumns(onEdit, onDelete, onAddComment, showActions),
+    [onEdit, onDelete, onAddComment, showActions],
   )
 
   const table = useReactTable({
@@ -88,58 +93,79 @@ export function DefectsTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <DefectsTableToolbar table={table} />
+      <DefectsTableToolbar table={table} viewMode={viewMode} />
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader className="bg-muted sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id} colSpan={header.colSpan}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
+        {viewMode === 'cards' ? (
+          // Card view
+          table.getRowModel().rows.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {table.getRowModel().rows.map((row) => (
+                <DefectCard
+                  key={row.id}
+                  defect={row.original}
+                  onEdit={onEdit}
+                  onAddComment={onAddComment}
+                />
               ))}
-            </TableHeader>
-            <TableBody className="**:data-[slot=table-cell]:first:w-8">
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
+              No results.
+            </div>
+          )
+        ) : (
+          // Table view
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader className="bg-muted sticky top-0 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </TableHead>
+                      )
+                    })}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableHeader>
+              <TableBody className="**:data-[slot=table-cell]:first:w-8">
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         <DefectsTablePagination table={table} />
       </div>
     </div>

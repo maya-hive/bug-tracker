@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { User } from '~/types/user'
+import type { User } from '~/types/user.type'
 
 export const AuthUserContext = createContext<User>({
   id: '1',
