@@ -2,7 +2,18 @@ import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import { ChevronDown, ChevronUp, MessageSquare, Pencil } from 'lucide-react'
+import {
+  Activity,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
+  MessageSquare,
+  Pencil,
+  Tag,
+  User,
+  UserCheck,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { ImageLightbox } from './image-lightbox'
 import type { DefectTableItem } from './defects-table.types'
@@ -93,14 +104,16 @@ export function DefectCard({
   return (
     <>
       <Card className="flex flex-col h-full gap-2">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg font-semibold line-clamp-2">
+        <CardHeader className="pb-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <CardTitle className="text-lg font-semibold leading-tight line-clamp-2">
                 {defect.name}
               </CardTitle>
-              <CardDescription className="mt-1 text-sm">
-                {defect.projectName} • {defect.module}
+              <CardDescription className="text-sm flex items-center gap-1.5">
+                <span className="font-medium">{defect.projectName}</span>
+                <span className="text-muted-foreground/60">•</span>
+                <span>{defect.module}</span>
               </CardDescription>
             </div>
             <Button
@@ -113,37 +126,50 @@ export function DefectCard({
               <Pencil className="size-4" />
             </Button>
           </div>
-        </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant={defect.defectType === 'bug' ? 'destructive' : 'default'}
+              className="gap-1.5"
             >
+              <AlertCircle className="size-3" />
               {defect.defectType}
             </Badge>
-            <Badge variant={severityColors[defect.severity]}>
+            <Badge
+              variant={severityColors[defect.severity]}
+              className="gap-1.5"
+            >
+              <Activity className="size-3" />
               {defect.severity}
             </Badge>
             {defect.flags.length > 0 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs gap-1.5">
+                <Tag className="size-3" />
                 {defect.flags.length} flag{defect.flags.length > 1 ? 's' : ''}
               </Badge>
             )}
           </div>
+        </CardHeader>
 
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {defect.description}
-          </p>
+        <CardContent className="flex-1 flex flex-col gap-4 pt-0">
+          {/* Description */}
+          <div className="space-y-1.5">
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+              {defect.description}
+            </p>
+          </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Status:</span>
+            <Activity className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground shrink-0">
+              Status:
+            </span>
             <Select
               value={defect.status}
               onValueChange={handleStatusChange}
               disabled={statusUpdating}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[140px] h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,93 +182,119 @@ export function DefectCard({
             </Select>
           </div>
 
-          {defect.reporterName && (
-            <div className="text-sm text-muted-foreground">
-              Reported by:{' '}
-              <span className="font-medium">{defect.reporterName}</span>
-            </div>
-          )}
+          {(defect.reporterName || defect.assignedToName) && (
+            <div className="flex items-center gap-4">
+              {defect.reporterName && (
+                <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
+                  <div className="flex items-center justify-center size-7 rounded-md bg-muted/50 border border-border/50 shrink-0">
+                    <User className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-muted-foreground">
+                      Reported by
+                    </div>
+                    <div className="font-medium truncate text-sm">
+                      {defect.reporterName}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {defect.assignedToName && (
-            <div className="text-sm text-muted-foreground">
-              Assigned to:{' '}
-              <span className="font-medium">{defect.assignedToName}</span>
+              {defect.assignedToName && (
+                <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
+                  <div className="flex items-center justify-center size-7 rounded-md bg-muted/50 border border-border/50 shrink-0">
+                    <UserCheck className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-muted-foreground">
+                      Assigned to
+                    </div>
+                    <div className="font-medium truncate text-sm">
+                      {defect.assignedToName}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {defect.screenshot && imageUrl && (
-            <div className="w-full">
+            <div className="space-y-2">
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
-                className="w-full rounded-md overflow-hidden border hover:opacity-90 transition-opacity"
+                className="w-full rounded-lg overflow-hidden border-2 border-border/50 hover:border-border transition-colors group"
               >
                 <img
                   src={imageUrl}
-                  alt="Defect attachment"
-                  className="w-full h-auto max-h-48 object-cover"
+                  alt="Defect screenshot"
+                  className="w-full h-auto max-h-48 object-cover group-hover:opacity-90 transition-opacity"
                 />
               </button>
             </div>
           )}
 
-          {commentsCount > 0 && (
-            <Collapsible
-              open={commentsExpanded}
-              onOpenChange={setCommentsExpanded}
-            >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    <MessageSquare className="size-4" />
-                    {commentsCount} comment{commentsCount > 1 ? 's' : ''}
-                  </span>
-                  {commentsExpanded ? (
-                    <ChevronUp className="size-4" />
-                  ) : (
-                    <ChevronDown className="size-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 pt-2">
-                {comments.slice(0, 3).map((comment, index) => (
-                  <div
-                    key={index}
-                    className="text-sm p-2 rounded-md bg-muted/50"
+          <div className="mt-auto space-y-2 pt-2 border-t border-border/50">
+            {commentsCount > 0 && (
+              <Collapsible
+                open={commentsExpanded}
+                onOpenChange={setCommentsExpanded}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-sm h-9"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-xs">
-                        {getUserName(comment.authorId)}
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="size-4" />
+                      <span>
+                        {commentsCount} comment{commentsCount > 1 ? 's' : ''}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(comment.timestamp), 'MMM d, yyyy')}
-                      </span>
+                    </span>
+                    {commentsExpanded ? (
+                      <ChevronUp className="size-4" />
+                    ) : (
+                      <ChevronDown className="size-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2.5 pt-2">
+                  {comments.slice(0, 3).map((comment, index) => (
+                    <div
+                      key={index}
+                      className="text-sm p-3 rounded-lg bg-muted/50 border border-border/50 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-xs">
+                          {getUserName(comment.authorId)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(comment.timestamp), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed">{comment.text}</p>
                     </div>
-                    <p className="text-sm">{comment.text}</p>
-                  </div>
-                ))}
-                {commentsCount > 3 && (
-                  <p className="text-xs text-muted-foreground text-center pt-1">
-                    +{commentsCount - 3} more comment
-                    {commentsCount - 3 > 1 ? 's' : ''}
-                  </p>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+                  ))}
+                  {commentsCount > 3 && (
+                    <p className="text-xs text-muted-foreground text-center pt-1">
+                      +{commentsCount - 3} more comment
+                      {commentsCount - 3 > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => onAddComment(defect)}
-          >
-            <MessageSquare className="size-4 mr-2" />
-            Add Comment
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-9"
+              onClick={() => onAddComment(defect)}
+            >
+              <MessageSquare className="size-4 mr-2" />
+              Add Comment
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
