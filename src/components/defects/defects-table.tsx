@@ -98,7 +98,7 @@ export function DefectsTable({
         {viewMode === 'cards' ? (
           // Card view
           table.getRowModel().rows.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
               {table.getRowModel().rows.map((row) => (
                 <DefectCard
                   key={row.id}
