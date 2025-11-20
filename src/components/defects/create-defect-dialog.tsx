@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Upload, X } from 'lucide-react'
 
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
@@ -33,6 +32,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { ScrollArea } from '~/components/ui/scroll-area'
+import { ImageDropzone } from '~/components/ui/image-dropzone'
 import { useProject } from '~/hooks/use-project'
 
 const createDefectSchema = z.object({
@@ -61,6 +61,7 @@ export function CreateDefectDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedProject] = useProject()
 
   const form = useForm({
@@ -68,12 +69,14 @@ export function CreateDefectDialog({
       projectId: selectedProject ?? '',
       name: '',
       module: '',
-      defectType: 'bug' as 'bug' | 'improvement',
+      defectType: 'bug' as z.infer<typeof createDefectSchema>['defectType'],
       description: '',
-      assignedTo: '__unassigned__' as string | undefined,
-      severity: 'medium' as 'cosmetic' | 'medium' | 'high' | 'critical',
+      assignedTo: '__unassigned__' as z.infer<
+        typeof createDefectSchema
+      >['assignedTo'],
+      severity: 'medium' as z.infer<typeof createDefectSchema>['severity'],
       flags: [] as Array<'unit test failure' | 'content issue'> | undefined,
-      status: 'open' as 'open' | 'fixed' | 'verified' | 'reopened' | 'deferred',
+      status: 'open' as z.infer<typeof createDefectSchema>['status'],
     },
     validators: {
       // @ts-expect-error - TanStack Form type inference doesn't fully support zod optional fields
@@ -102,6 +105,7 @@ export function CreateDefectDialog({
         onOpenChange(false)
         form.reset()
         setScreenshot(null)
+        setSelectedFile(null)
       } catch (error) {
         toast.error('Failed to create defect')
         console.error(error)
@@ -118,10 +122,14 @@ export function CreateDefectDialog({
     }
   }, [selectedProject, form])
 
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return
+  const handleFileUpload = async (file: File | null) => {
+    if (!file) {
+      setScreenshot(null)
+      setSelectedFile(null)
+      return
+    }
 
-    const file = files[0] // Only take the first file
+    setSelectedFile(file)
     setUploadingFile(true)
     try {
       const uploadUrl = await generateUploadUrl()
@@ -144,13 +152,10 @@ export function CreateDefectDialog({
     } catch (error) {
       toast.error('Failed to upload file')
       console.error(error)
+      setSelectedFile(null)
     } finally {
       setUploadingFile(false)
     }
-  }
-
-  const removeScreenshot = () => {
-    setScreenshot(null)
   }
 
   return (
@@ -525,46 +530,11 @@ export function CreateDefectDialog({
               />
               <Field>
                 <FieldLabel>Screenshot</FieldLabel>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                      disabled={uploadingFile}
-                      className="hidden"
-                      id="file-upload-create"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const fileInput =
-                          document.getElementById('file-upload-create')
-                        fileInput?.click()
-                      }}
-                      disabled={uploadingFile}
-                      className="w-full sm:w-auto"
-                    >
-                      <Upload className="size-4 mr-2" />
-                      {uploadingFile ? 'Uploading...' : 'Upload Screenshot'}
-                    </Button>
-                  </div>
-                  {screenshot && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md w-full justify-between">
-                      <span className="text-sm">Screenshot attached</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 h-6"
-                        onClick={removeScreenshot}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <ImageDropzone
+                  onFileSelect={handleFileUpload}
+                  disabled={uploadingFile || isSubmitting}
+                  currentFile={selectedFile}
+                />
               </Field>
             </FieldGroup>
           </ScrollArea>
@@ -576,6 +546,7 @@ export function CreateDefectDialog({
                 onOpenChange(false)
                 form.reset()
                 setScreenshot(null)
+                setSelectedFile(null)
               }}
               disabled={isSubmitting}
             >

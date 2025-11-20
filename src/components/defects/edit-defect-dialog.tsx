@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Upload, X } from 'lucide-react'
 
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
@@ -34,6 +33,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { ScrollArea } from '~/components/ui/scroll-area'
+import { ImageDropzone } from '~/components/ui/image-dropzone'
 
 const editDefectSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
@@ -63,6 +63,14 @@ export function EditDefectDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  const existingScreenshotUrl = useQuery(
+    api.defects.getFileUrl,
+    defect?.screenshot && !selectedFile
+      ? { storageId: defect.screenshot as Id<'_storage'> }
+      : 'skip',
+  )
 
   const form = useForm({
     defaultValues: {
@@ -77,7 +85,7 @@ export function EditDefectDialog({
       status: defect?.status || 'open',
     },
     validators: {
-      // @ts-expect-error - TanStack Form type inference doesn't fully support zod optional fields
+      // @ts-expect-error
       onSubmit: editDefectSchema,
     },
     onSubmit: async ({ value }) => {
@@ -115,7 +123,6 @@ export function EditDefectDialog({
     },
   })
 
-  // Reset form when defect changes
   useEffect(() => {
     if (defect && open) {
       form.reset({
@@ -130,18 +137,24 @@ export function EditDefectDialog({
         status: defect.status,
       })
       setScreenshot(defect.screenshot || null)
+      setSelectedFile(null)
     } else if (!open) {
-      // Reset form when dialog closes
       form.reset()
       setScreenshot(null)
+      setSelectedFile(null)
     }
   }, [defect, open, form])
 
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return
+  const handleFileUpload = async (file: File | null) => {
+    if (!file) {
+      setScreenshot(null)
+      setSelectedFile(null)
+      return
+    }
 
-    const file = files[0] // Only take the first file
+    setSelectedFile(file)
     setUploadingFile(true)
+
     try {
       const uploadUrl = await generateUploadUrl()
       const result = await fetch(uploadUrl, {
@@ -149,27 +162,28 @@ export function EditDefectDialog({
         headers: { 'Content-Type': file.type },
         body: file,
       })
+
       const responseText = await result.text()
-      // Handle both JSON and plain text responses
       let storageId: string
+
       try {
         const parsed = JSON.parse(responseText)
         storageId = parsed.storageId || parsed
       } catch {
         storageId = responseText
       }
+
       setScreenshot(storageId)
+
       toast.success('File uploaded successfully')
     } catch (error) {
       toast.error('Failed to upload file')
       console.error(error)
+
+      setSelectedFile(null)
     } finally {
       setUploadingFile(false)
     }
-  }
-
-  const removeScreenshot = () => {
-    setScreenshot(null)
   }
 
   if (!defect) return null
@@ -546,46 +560,16 @@ export function EditDefectDialog({
               />
               <Field>
                 <FieldLabel>Screenshot</FieldLabel>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                      disabled={uploadingFile}
-                      className="hidden"
-                      id="file-upload-edit"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const fileInput =
-                          document.getElementById('file-upload-edit')
-                        fileInput?.click()
-                      }}
-                      disabled={uploadingFile}
-                      className="w-full sm:w-auto"
-                    >
-                      <Upload className="size-4 mr-2" />
-                      {uploadingFile ? 'Uploading...' : 'Upload Screenshot'}
-                    </Button>
-                  </div>
-                  {screenshot && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md w-full justify-between">
-                      <span className="text-sm">Screenshot attached</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-6 h-6"
-                        onClick={removeScreenshot}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <ImageDropzone
+                  onFileSelect={handleFileUpload}
+                  disabled={uploadingFile || isSubmitting}
+                  currentFile={selectedFile}
+                  previewUrl={
+                    selectedFile
+                      ? undefined
+                      : existingScreenshotUrl || undefined
+                  }
+                />
               </Field>
             </FieldGroup>
           </ScrollArea>

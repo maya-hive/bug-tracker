@@ -71,12 +71,7 @@ export function DefectCard({
     try {
       await updateDefect({
         defectId: defect._id as Id<'defects'>,
-        status: newStatus as
-          | 'open'
-          | 'fixed'
-          | 'verified'
-          | 'reopened'
-          | 'deferred',
+        status: newStatus as DefectTableItem['status'],
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -97,7 +92,7 @@ export function DefectCard({
 
   return (
     <>
-      <Card className="flex flex-col h-full">
+      <Card className="flex flex-col h-full gap-2">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -121,7 +116,6 @@ export function DefectCard({
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-3">
-          {/* Defect Type and Severity */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant={defect.defectType === 'bug' ? 'destructive' : 'default'}
@@ -138,12 +132,10 @@ export function DefectCard({
             )}
           </div>
 
-          {/* Description */}
           <p className="text-sm text-muted-foreground line-clamp-3">
             {defect.description}
           </p>
 
-          {/* Status Selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Status:</span>
             <Select
@@ -164,7 +156,6 @@ export function DefectCard({
             </Select>
           </div>
 
-          {/* Assigned To */}
           {defect.assignedToName && (
             <div className="text-sm text-muted-foreground">
               Assigned to:{' '}
@@ -172,7 +163,6 @@ export function DefectCard({
             </div>
           )}
 
-          {/* Attachment */}
           {defect.screenshot && imageUrl && (
             <div className="w-full">
               <button
@@ -189,7 +179,6 @@ export function DefectCard({
             </div>
           )}
 
-          {/* Comments Section */}
           {commentsCount > 0 && (
             <Collapsible
               open={commentsExpanded}
@@ -238,7 +227,6 @@ export function DefectCard({
             </Collapsible>
           )}
 
-          {/* Add Comment Button */}
           <Button
             variant="outline"
             size="sm"
@@ -251,7 +239,6 @@ export function DefectCard({
         </CardContent>
       </Card>
 
-      {/* Lightbox */}
       {defect.screenshot && (
         <ImageLightbox
           storageId={defect.screenshot as Id<'_storage'>}
