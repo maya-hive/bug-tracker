@@ -156,6 +156,13 @@ export function DefectCard({
             </Select>
           </div>
 
+          {defect.reporterName && (
+            <div className="text-sm text-muted-foreground">
+              Reported by:{' '}
+              <span className="font-medium">{defect.reporterName}</span>
+            </div>
+          )}
+
           {defect.assignedToName && (
             <div className="text-sm text-muted-foreground">
               Assigned to:{' '}

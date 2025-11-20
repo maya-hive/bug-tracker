@@ -17,7 +17,6 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
-import { Checkbox } from '~/components/ui/checkbox'
 import {
   Field,
   FieldError,
@@ -31,7 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { ScrollArea } from '~/components/ui/scroll-area'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
+import { Checkbox } from '~/components/ui/checkbox'
 import { ImageDropzone } from '~/components/ui/image-dropzone'
 import { useProject } from '~/hooks/use-project'
 
@@ -97,7 +101,7 @@ export function CreateDefectDialog({
               : undefined,
           severity: value.severity,
           flags: value.flags,
-          status: value.status,
+          status: 'open',
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -160,7 +164,7 @@ export function CreateDefectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Create Defect</DialogTitle>
           <DialogDescription>
@@ -173,43 +177,43 @@ export function CreateDefectDialog({
             form.handleSubmit()
           }}
         >
-          <ScrollArea className="h-[60vh] pr-4">
-            <FieldGroup className="space-y-4">
-              <form.Field
-                name="projectId"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Project</FieldLabel>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(value) => field.handleChange(value)}
-                      >
-                        <SelectTrigger
-                          id={field.name}
-                          className="w-full"
-                          aria-invalid={isInvalid}
+          <div className="pr-4 max-h-[calc(90vh-180px)] overflow-y-auto">
+            <FieldGroup className="gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form.Field
+                  name="projectId"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Project</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value)}
                         >
-                          <SelectValue placeholder="Select project" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects?.map((project) => (
-                            <SelectItem key={project._id} value={project._id}>
-                              {project.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue placeholder="Select project" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects?.map((project) => (
+                              <SelectItem key={project._id} value={project._id}>
+                                {project.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
                 <form.Field
                   name="name"
                   children={(field) => {
@@ -275,7 +279,8 @@ export function CreateDefectDialog({
                         id={field.name}
                         name={field.name}
                         placeholder="Enter defect description"
-                        className="min-h-[100px] w-full"
+                        className="w-full"
+                        rows={2}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
@@ -289,7 +294,7 @@ export function CreateDefectDialog({
                   )
                 }}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <form.Field
                   name="defectType"
                   children={(field) => {
@@ -408,41 +413,101 @@ export function CreateDefectDialog({
                   }}
                 />
                 <form.Field
-                  name="status"
+                  name="flags"
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
+                    const currentFlags = field.state.value || []
+                    const flagOptions = [
+                      {
+                        value: 'unit test failure',
+                        label: 'Unit Test Failure',
+                      },
+                      { value: 'content issue', label: 'Content Issue' },
+                    ] as const
+                    const displayText =
+                      currentFlags.length > 0
+                        ? `${currentFlags.length} selected`
+                        : 'Select flags'
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(
-                              value as
-                                | 'open'
-                                | 'fixed'
-                                | 'verified'
-                                | 'reopened'
-                                | 'deferred',
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
+                        <FieldLabel htmlFor={field.name}>Flags</FieldLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id={field.name}
+                              aria-invalid={isInvalid}
+                              variant="outline"
+                              className="w-full justify-between"
+                              disabled={isSubmitting}
+                              onBlur={field.handleBlur}
+                            >
+                              <span
+                                className={
+                                  currentFlags.length === 0
+                                    ? 'text-muted-foreground'
+                                    : ''
+                                }
+                              >
+                                {displayText}
+                              </span>
+                              <svg
+                                className="h-4 w-4 opacity-50"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
+                              </svg>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[200px] p-2"
+                            align="start"
                           >
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                            <SelectItem value="verified">Verified</SelectItem>
-                            <SelectItem value="reopened">Reopened</SelectItem>
-                            <SelectItem value="deferred">Deferred</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            <div className="space-y-2">
+                              {flagOptions.map((option) => (
+                                <div
+                                  key={option.value}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={`flag-${option.value}`}
+                                    checked={currentFlags.includes(
+                                      option.value,
+                                    )}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.handleChange([
+                                          ...currentFlags,
+                                          option.value,
+                                        ])
+                                      } else {
+                                        field.handleChange(
+                                          currentFlags.filter(
+                                            (value) => value !== option.value,
+                                          ),
+                                        )
+                                      }
+                                    }}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label
+                                    htmlFor={`flag-${option.value}`}
+                                    className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {option.label}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}
@@ -451,83 +516,6 @@ export function CreateDefectDialog({
                   }}
                 />
               </div>
-              <form.Field
-                name="flags"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel>Flags</FieldLabel>
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex flex-row items-start space-x-2">
-                          <Checkbox
-                            id="flag-unit-test"
-                            checked={field.state.value?.includes(
-                              'unit test failure',
-                            )}
-                            onCheckedChange={(checked) => {
-                              const currentFlags = field.state.value || []
-                              if (checked) {
-                                field.handleChange([
-                                  ...currentFlags,
-                                  'unit test failure',
-                                ])
-                              } else {
-                                field.handleChange(
-                                  currentFlags.filter(
-                                    (value) => value !== 'unit test failure',
-                                  ),
-                                )
-                              }
-                            }}
-                            disabled={isSubmitting}
-                          />
-                          <label
-                            htmlFor="flag-unit-test"
-                            className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            Unit Test Failure
-                          </label>
-                        </div>
-                        <div className="flex flex-row items-start space-x-2">
-                          <Checkbox
-                            id="flag-content-issue"
-                            checked={field.state.value?.includes(
-                              'content issue',
-                            )}
-                            onCheckedChange={(checked) => {
-                              const currentFlags = field.state.value || []
-                              if (checked) {
-                                field.handleChange([
-                                  ...currentFlags,
-                                  'content issue',
-                                ])
-                              } else {
-                                field.handleChange(
-                                  currentFlags.filter(
-                                    (value) => value !== 'content issue',
-                                  ),
-                                )
-                              }
-                            }}
-                            disabled={isSubmitting}
-                          />
-                          <label
-                            htmlFor="flag-content-issue"
-                            className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            Content Issue
-                          </label>
-                        </div>
-                      </div>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
               <Field>
                 <FieldLabel>Screenshot</FieldLabel>
                 <ImageDropzone
@@ -537,8 +525,8 @@ export function CreateDefectDialog({
                 />
               </Field>
             </FieldGroup>
-          </ScrollArea>
-          <DialogFooter>
+          </div>
+          <DialogFooter className="mt-4">
             <Button
               type="button"
               variant="outline"

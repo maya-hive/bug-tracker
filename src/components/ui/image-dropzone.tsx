@@ -149,7 +149,7 @@ export function ImageDropzone({
                 <X className="size-4" />
               </Button>
             </div>
-            {!previewUrl && (
+            {!currentFile && !previewUrl && (
               <div className="flex items-center justify-center gap-2">
                 <Button
                   type="button"
@@ -164,17 +164,12 @@ export function ImageDropzone({
                   <Upload className="size-4 mr-2" />
                   Replace Image
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  or focus here and paste (Ctrl+V)
-                </span>
               </div>
             )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 text-center">
-            <div className="rounded-full bg-muted p-3">
-              <Upload className="size-6 text-muted-foreground" />
-            </div>
+            <Upload className="size-6 text-muted-foreground" />
             <div className="space-y-2">
               <p className="text-sm font-medium">
                 {isDragActive
@@ -194,9 +189,6 @@ export function ImageDropzone({
                 >
                   Browse Files
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  Or click here to focus, then paste (Ctrl+V / Cmd+V)
-                </p>
               </div>
             </div>
           </div>
