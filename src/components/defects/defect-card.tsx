@@ -7,7 +7,6 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Image as ImageIcon,
   MessageSquare,
   Pencil,
   Tag,
