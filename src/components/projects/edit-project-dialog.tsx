@@ -51,12 +51,16 @@ export function EditProjectDialog({
   const form = useForm({
     defaultValues: {
       name: '',
-      environment: 'dev' as const,
+      environment: 'dev' as z.infer<typeof editProjectSchema>['environment'],
     },
     validators: {
       onSubmit: editProjectSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({
+      value,
+    }: {
+      value: z.infer<typeof editProjectSchema>
+    }) => {
       if (!project) return
 
       setIsSubmitting(true)
@@ -142,7 +146,11 @@ export function EditProjectDialog({
                     <Select
                       value={field.state.value}
                       onValueChange={(value) =>
-                        field.handleChange(value as 'live' | 'staging' | 'dev')
+                        field.handleChange(
+                          value as z.infer<
+                            typeof editProjectSchema
+                          >['environment'],
+                        )
                       }
                     >
                       <SelectTrigger id={field.name} aria-invalid={isInvalid}>

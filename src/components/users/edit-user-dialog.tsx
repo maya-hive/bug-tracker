@@ -51,11 +51,11 @@ export function EditUserDialog({
       name: '',
       email: '',
       newPassword: '',
-    },
+    } as z.infer<typeof editUserSchema>,
     validators: {
       onSubmit: editUserSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({ value }: { value: z.infer<typeof editUserSchema> }) => {
       if (!user) return
 
       setIsSubmitting(true)

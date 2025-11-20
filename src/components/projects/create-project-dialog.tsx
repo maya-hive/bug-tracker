@@ -47,12 +47,16 @@ export function CreateProjectDialog({
   const form = useForm({
     defaultValues: {
       name: '',
-      environment: 'dev' as const,
+      environment: 'dev' as z.infer<typeof createProjectSchema>['environment'],
     },
     validators: {
       onSubmit: createProjectSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({
+      value,
+    }: {
+      value: z.infer<typeof createProjectSchema>
+    }) => {
       setIsSubmitting(true)
       try {
         await createProject({
@@ -125,7 +129,11 @@ export function CreateProjectDialog({
                     <Select
                       value={field.state.value}
                       onValueChange={(value) =>
-                        field.handleChange(value as 'live' | 'staging' | 'dev')
+                        field.handleChange(
+                          value as z.infer<
+                            typeof createProjectSchema
+                          >['environment'],
+                        )
                       }
                     >
                       <SelectTrigger id={field.name} aria-invalid={isInvalid}>
