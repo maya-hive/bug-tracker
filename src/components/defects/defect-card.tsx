@@ -110,8 +110,6 @@ export function DefectCard({
                 {defect.name}
               </CardTitle>
               <CardDescription className="text-sm flex items-center gap-1.5">
-                <span className="font-medium">{defect.projectName}</span>
-                <span className="text-muted-foreground/60">•</span>
                 <span>{defect.module}</span>
               </CardDescription>
             </div>
@@ -124,6 +122,23 @@ export function DefectCard({
             >
               <Pencil className="size-4" />
             </Button>
+
+            <Select
+              value={defect.status}
+              onValueChange={handleStatusChange}
+              disabled={statusUpdating}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -151,34 +166,10 @@ export function DefectCard({
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-4 pt-0">
-          {/* Description */}
           <div className="space-y-1.5">
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
               {defect.description}
             </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Activity className="size-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs text-muted-foreground shrink-0">
-              Status:
-            </span>
-            <Select
-              value={defect.status}
-              onValueChange={handleStatusChange}
-              disabled={statusUpdating}
-            >
-              <SelectTrigger className="w-[140px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {(defect.reporterName || defect.assignedToName) && (
@@ -290,7 +281,7 @@ export function DefectCard({
               className="w-full h-9"
               onClick={() => onAddComment(defect)}
             >
-              <MessageSquare className="size-4 mr-2" />
+              <MessageSquare className="size-4" />
               Add Comment
             </Button>
           </div>

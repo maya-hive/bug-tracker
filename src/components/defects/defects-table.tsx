@@ -11,7 +11,6 @@ import {
 } from '@tanstack/react-table'
 import { createColumns } from './defects-table-columns'
 import { DefectsTablePagination } from './defects-table-pagination'
-import { DefectsTableToolbar } from './defects-table-toolbar'
 import { DefectCard } from './defect-card'
 import type { DefectTableItem } from './defects-table.types'
 import type {
@@ -93,7 +92,6 @@ export function DefectsTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <DefectsTableToolbar table={table} viewMode={viewMode} />
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         {viewMode === 'cards' ? (
           // Card view

@@ -13,11 +13,6 @@ export default defineSchema({
   }),
   projects: defineTable({
     name: v.string(),
-    environment: v.union(
-      v.literal('live'),
-      v.literal('staging'),
-      v.literal('dev'),
-    ),
   }),
   defects: defineTable({
     projectId: v.id('projects'),

@@ -1,44 +1,9 @@
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DefectTableItem } from './defects-table.types'
-import type { ColumnDef, Table as TanstackTable } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '~/components/ui/button'
-import { Checkbox } from '~/components/ui/checkbox'
 import { Badge } from '~/components/ui/badge'
-
-function SelectCell({ table }: { table: TanstackTable<DefectTableItem> }) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    </div>
-  )
-}
-
-function SelectRowCell({
-  row,
-}: {
-  row: {
-    getIsSelected: () => boolean
-    toggleSelected: (value: boolean) => void
-  }
-}) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    </div>
-  )
-}
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
@@ -80,15 +45,6 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
     <Badge variant={statusColors[row.original.status]}>
       {row.original.status}
     </Badge>
-  )
-}
-
-function ScreenshotCell({ row }: { row: { original: DefectTableItem } }) {
-  const hasScreenshot = !!row.original.screenshot
-  return (
-    <div className="text-muted-foreground text-sm">
-      {hasScreenshot ? <span>Has screenshot</span> : <span>No screenshot</span>}
-    </div>
   )
 }
 
@@ -138,17 +94,6 @@ function FlagsCell({ row }: { row: { original: DefectTableItem } }) {
           {flag}
         </Badge>
       ))}
-    </div>
-  )
-}
-
-function CommentsCell({ row }: { row: { original: DefectTableItem } }) {
-  const count = row.original.comments?.length ?? 0
-  return (
-    <div className="text-sm text-muted-foreground">
-      {count === 0
-        ? 'No comments'
-        : `${count} comment${count === 1 ? '' : 's'}`}
     </div>
   )
 }
@@ -213,13 +158,6 @@ export function createColumns(
 ): Array<ColumnDef<DefectTableItem>> {
   const columns: Array<ColumnDef<DefectTableItem>> = [
     {
-      id: 'select',
-      header: ({ table }) => <SelectCell table={table} />,
-      cell: ({ row }) => <SelectRowCell row={row} />,
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
@@ -269,16 +207,6 @@ export function createColumns(
       accessorKey: 'flags',
       header: 'Flags',
       cell: ({ row }) => <FlagsCell row={row} />,
-    },
-    {
-      accessorKey: 'screenshot',
-      header: 'Screenshot',
-      cell: ({ row }) => <ScreenshotCell row={row} />,
-    },
-    {
-      accessorKey: 'comments',
-      header: 'Comments',
-      cell: ({ row }) => <CommentsCell row={row} />,
     },
     {
       accessorKey: '_creationTime',

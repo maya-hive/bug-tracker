@@ -72,7 +72,6 @@ function Projects() {
     _id: project._id,
     _creationTime: project._creationTime,
     name: project.name,
-    environment: project.environment,
   }))
 
   return (
@@ -81,9 +80,7 @@ function Projects() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Projects</h1>
-            <p className="text-muted-foreground">
-              Manage projects and their environments
-            </p>
+            <p className="text-muted-foreground">Manage projects</p>
           </div>
           <Button onClick={() => setCreateProjectOpen(true)}>
             <CirclePlus className="size-4" />

@@ -1,66 +1,16 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import type { ProjectTableItem } from './projects-table.types'
-import type { ColumnDef, Table as TanstackTable } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '~/components/ui/button'
-import { Checkbox } from '~/components/ui/checkbox'
-import { Badge } from '~/components/ui/badge'
-
-function SelectCell({ table }: { table: TanstackTable<ProjectTableItem> }) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    </div>
-  )
-}
-
-function SelectRowCell({
-  row,
-}: {
-  row: {
-    getIsSelected: () => boolean
-    toggleSelected: (value: boolean) => void
-  }
-}) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    </div>
-  )
-}
 
 function NameCell({ row }: { row: { original: ProjectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
 }
 
-function EnvironmentCell({ row }: { row: { original: ProjectTableItem } }) {
-  const envColors = {
-    live: 'destructive',
-    staging: 'default',
-    dev: 'secondary',
-  } as const
-
-  return (
-    <Badge variant={envColors[row.original.environment]}>
-      {row.original.environment}
-    </Badge>
-  )
-}
-
 function CreatedDateCell({ row }: { row: { original: ProjectTableItem } }) {
   return (
-    <div className="text-muted-foreground text-sm">
+    <div className="text-muted-foreground text-sm text-right">
       {format(new Date(row.original._creationTime), 'MMM d, yyyy')}
     </div>
   )
@@ -105,26 +55,14 @@ export function createColumns(
 ): Array<ColumnDef<ProjectTableItem>> {
   return [
     {
-      id: 'select',
-      header: ({ table }) => <SelectCell table={table} />,
-      cell: ({ row }) => <SelectRowCell row={row} />,
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
       enableHiding: false,
     },
     {
-      accessorKey: 'environment',
-      header: 'Environment',
-      cell: ({ row }) => <EnvironmentCell row={row} />,
-    },
-    {
       accessorKey: '_creationTime',
-      header: 'Created',
+      header: () => <div className="text-right">Created</div>,
       cell: ({ row }) => <CreatedDateCell row={row} />,
     },
     {

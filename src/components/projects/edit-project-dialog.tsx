@@ -23,17 +23,9 @@ import {
   FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 
 const editProjectSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  environment: z.enum(['live', 'staging', 'dev']),
 })
 
 export function EditProjectDialog({
@@ -51,7 +43,6 @@ export function EditProjectDialog({
   const form = useForm({
     defaultValues: {
       name: '',
-      environment: 'dev' as z.infer<typeof editProjectSchema>['environment'],
     },
     validators: {
       onSubmit: editProjectSchema,
@@ -68,7 +59,6 @@ export function EditProjectDialog({
         await updateProject({
           projectId: project._id as Id<'projects'>,
           name: value.name,
-          environment: value.environment,
         })
 
         toast.success('Project updated successfully')
@@ -88,7 +78,6 @@ export function EditProjectDialog({
     if (project && open) {
       form.reset({
         name: project.name,
-        environment: project.environment,
       })
     }
   }, [project, open, form])
@@ -128,40 +117,6 @@ export function EditProjectDialog({
                       aria-invalid={isInvalid}
                       disabled={isSubmitting}
                     />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <form.Field
-              name="environment"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Environment</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) =>
-                        field.handleChange(
-                          value as z.infer<
-                            typeof editProjectSchema
-                          >['environment'],
-                        )
-                      }
-                    >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue placeholder="Select environment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="live">Live</SelectItem>
-                        <SelectItem value="staging">Staging</SelectItem>
-                        <SelectItem value="dev">Dev</SelectItem>
-                      </SelectContent>
-                    </Select>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}

@@ -11,7 +11,6 @@ import {
 } from '@tanstack/react-table'
 import { createColumns } from './projects-table-columns'
 import { ProjectsTablePagination } from './projects-table-pagination'
-import { ProjectsTableToolbar } from './projects-table-toolbar'
 import type { ProjectTableItem } from './projects-table.types'
 import type {
   ColumnFiltersState,
@@ -86,7 +85,6 @@ export function ProjectsTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <ProjectsTableToolbar table={table} />
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
           <Table>

@@ -1,43 +1,8 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import type { UserTableItem } from './users-table.types'
-import type { ColumnDef, Table as TanstackTable } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '~/components/ui/button'
-import { Checkbox } from '~/components/ui/checkbox'
-
-function SelectCell({ table }: { table: TanstackTable<UserTableItem> }) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    </div>
-  )
-}
-
-function SelectRowCell({
-  row,
-}: {
-  row: {
-    getIsSelected: () => boolean
-    toggleSelected: (value: boolean) => void
-  }
-}) {
-  return (
-    <div className="flex items-center justify-center">
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    </div>
-  )
-}
 
 function NameCell({ row }: { row: { original: UserTableItem } }) {
   return (
@@ -56,16 +21,6 @@ function EmailCell({ row }: { row: { original: UserTableItem } }) {
 }
 
 function CreatedDateCell({ row }: { row: { original: UserTableItem } }) {
-  return (
-    <div className="text-muted-foreground text-sm">
-      {format(new Date(row.original._creationTime), 'MMM d, yyyy')}
-    </div>
-  )
-}
-
-function UpdatedDateCell({ row }: { row: { original: UserTableItem } }) {
-  // Note: Convex doesn't have _updatedTime by default
-  // We'll use _creationTime as a placeholder, or you can add an updatedAt field
   return (
     <div className="text-muted-foreground text-sm">
       {format(new Date(row.original._creationTime), 'MMM d, yyyy')}
@@ -112,13 +67,6 @@ export function createColumns(
 ): Array<ColumnDef<UserTableItem>> {
   return [
     {
-      id: 'select',
-      header: ({ table }) => <SelectCell table={table} />,
-      cell: ({ row }) => <SelectRowCell row={row} />,
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
@@ -133,11 +81,6 @@ export function createColumns(
       accessorKey: '_creationTime',
       header: 'Created',
       cell: ({ row }) => <CreatedDateCell row={row} />,
-    },
-    {
-      id: 'updated',
-      header: 'Updated',
-      cell: ({ row }) => <UpdatedDateCell row={row} />,
     },
     {
       id: 'actions',
