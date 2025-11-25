@@ -84,14 +84,3 @@ export const deleteProject = mutation({
     return null
   },
 })
-
-export const removeEnvironment = mutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
-    const rows = await ctx.db.query('projects').collect()
-    for (const row of rows) {
-      await ctx.db.patch(row._id, { environment: undefined })
-    }
-  },
-})
