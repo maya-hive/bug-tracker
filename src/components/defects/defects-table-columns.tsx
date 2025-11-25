@@ -206,17 +206,11 @@ export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
-      enableHiding: false,
     },
     {
       accessorKey: 'projectId',
       header: 'Project',
       cell: ({ row }) => <ProjectCell row={row} />,
-    },
-    {
-      accessorKey: 'module',
-      header: 'Module',
-      cell: ({ row }) => <ModuleCell row={row} />,
     },
     {
       accessorKey: 'defectType',
@@ -267,7 +261,6 @@ export function createDefectsColumns(
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
-      enableHiding: false,
     },
     {
       accessorKey: 'module',

@@ -11,6 +11,7 @@ import {
   Tag,
   User,
   UserCheck,
+  UserRoundPen,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ImageLightbox } from './image-lightbox'
@@ -37,6 +38,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
+import { cn } from '~/lib/utils'
+import { ImageZoom } from '~/components/ui/image-zoom'
+import { Skeleton } from '~/components/ui/skeleton'
 
 const statusOptions = [
   { value: 'open', label: 'Open' },
@@ -55,7 +59,6 @@ const severityColors = {
 
 export function DefectCard({
   defect,
-  onEdit,
   onAddComment,
 }: {
   defect: DefectTableItem
@@ -166,7 +169,7 @@ export function DefectCard({
               {defect.reporterName && (
                 <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
                   <div className="flex items-center justify-center size-7 rounded-md bg-muted/50 border border-border/50 shrink-0">
-                    <User className="size-3.5 text-muted-foreground" />
+                    <UserCheck className="size-3.5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground">
@@ -182,7 +185,7 @@ export function DefectCard({
               {defect.assignedToName && (
                 <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
                   <div className="flex items-center justify-center size-7 rounded-md bg-muted/50 border border-border/50 shrink-0">
-                    <UserCheck className="size-3.5 text-muted-foreground" />
+                    <UserRoundPen className="size-3.5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground">
@@ -197,21 +200,24 @@ export function DefectCard({
             </div>
           )}
 
-          {defect.screenshot && imageUrl && (
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setLightboxOpen(true)}
-                className="w-full rounded-lg overflow-hidden border-2 border-border/50 hover:border-border transition-colors group"
+          <div className="space-y-2">
+            {defect.screenshot && imageUrl ? (
+              <ImageZoom
+                zoomMargin={100}
+                backdropClassName={cn(
+                  '[&_[data-rmiz-modal-overlay="visible"]]:bg-black/80',
+                )}
               >
                 <img
+                  className="h-56 w-full rounded-sm"
                   src={imageUrl}
-                  alt="Defect screenshot"
-                  className="w-full h-auto max-h-48 object-cover group-hover:opacity-90 transition-opacity"
+                  loading="lazy"
                 />
-              </button>
-            </div>
-          )}
+              </ImageZoom>
+            ) : (
+              <Skeleton className="h-56 w-full rounded-sm" />
+            )}
+          </div>
 
           <div className="mt-auto space-y-2 pt-2 border-t border-border/50">
             {commentsCount > 0 && (
