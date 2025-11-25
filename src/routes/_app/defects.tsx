@@ -1,17 +1,19 @@
-import { Suspense, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import { CirclePlus } from 'lucide-react'
-import { DefectsTable } from '../../components/defects/defects-table'
-import { EditDefectDialog } from '../../components/defects/edit-defect-dialog'
-import { CreateDefectDialog } from '../../components/defects/create-defect-dialog'
-import { AddCommentDialog } from '../../components/defects/add-comment-dialog'
-import type { DefectTableItem } from '../../components/defects/defects-table.types'
+import { CirclePlus, LayoutGrid, Table } from 'lucide-react'
+import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import { DefectsTable } from '~/components/defects/defects-table'
+import { createDefectsColumns } from '~/components/defects/defects-table-columns'
+import { EditDefectDialog } from '~/components/defects/edit-defect-dialog'
+import { CreateDefectDialog } from '~/components/defects/create-defect-dialog'
+import { AddCommentDialog } from '~/components/defects/add-comment-dialog'
 import { useProject } from '~/hooks/use-project'
 import { Button } from '~/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,8 @@ export const Route = createFileRoute('/_app/defects')({
   component: Defects,
 })
 
+const DEFECTS_VIEW_MODE_KEY = 'defects-view-mode'
+
 function Defects() {
   const defects = useQuery(api.defects.listDefects)
   const [projectId] = useProject()
@@ -41,6 +45,21 @@ function Defects() {
     useState<DefectTableItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [createDefectOpen, setCreateDefectOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(DEFECTS_VIEW_MODE_KEY)
+      if (saved === 'table' || saved === 'cards') {
+        return saved
+      }
+    }
+    return 'cards'
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DEFECTS_VIEW_MODE_KEY, viewMode)
+    }
+  }, [viewMode])
 
   const handleEdit = (defect: DefectTableItem) => {
     setEditingDefect(defect)
@@ -105,6 +124,12 @@ function Defects() {
       })
   }, [defects, projectId])
 
+  const columns = useMemo(
+    () =>
+      createDefectsColumns(handleEdit, handleDelete, handleAddComment, true),
+    [handleEdit, handleDelete, handleAddComment],
+  )
+
   if (defects === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -123,19 +148,39 @@ function Defects() {
               Manage defects and track their status
             </p>
           </div>
-          <Button onClick={() => setCreateDefectOpen(true)}>
-            <CirclePlus className="size-4" />
-            Create New Defect
-          </Button>
+          <div className="flex items-center gap-3">
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => {
+                if (value === 'table' || value === 'cards') {
+                  setViewMode(value)
+                }
+              }}
+              variant="outline"
+            >
+              <ToggleGroupItem value="cards" aria-label="Card view">
+                <LayoutGrid className="size-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="table" aria-label="Table view">
+                <Table className="size-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <Button onClick={() => setCreateDefectOpen(true)}>
+              <CirclePlus className="size-4" />
+              Create New Defect
+            </Button>
+          </div>
         </div>
       </div>
       <Suspense fallback={<div>Loading...</div>}>
         <DefectsTable
           data={defectsData}
+          columns={columns}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAddComment={handleAddComment}
-          viewMode="cards"
+          viewMode={viewMode}
         />
       </Suspense>
       <CreateDefectDialog

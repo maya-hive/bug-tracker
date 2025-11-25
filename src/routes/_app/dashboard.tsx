@@ -7,6 +7,7 @@ import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DefectTableItem } from '~/types/defects-table.type'
 import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
+import { createDashboardColumns } from '~/components/defects/defects-table-columns'
 import { useProject } from '~/hooks/use-project'
 
 export const Route = createFileRoute('/_app/dashboard')({
@@ -120,17 +121,22 @@ function Dashboard() {
   )
 }
 
-const Table = ({ data }: { data: any }) => (
-  <div className="mt-6">
-    <Suspense fallback={<div>Loading...</div>}>
-      <DefectsTable
-        data={data}
-        onEdit={() => {}}
-        onDelete={() => {}}
-        onAddComment={() => {}}
-        viewMode="table"
-        showActions={false}
-      />
-    </Suspense>
-  </div>
-)
+const Table = ({ data }: { data: any }) => {
+  const columns = useMemo(() => createDashboardColumns(), [])
+
+  return (
+    <div className="mt-6">
+      <Suspense fallback={<div>Loading...</div>}>
+        <DefectsTable
+          data={data}
+          columns={columns}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          onAddComment={() => {}}
+          viewMode="table"
+          showActions={false}
+        />
+      </Suspense>
+    </div>
+  )
+}

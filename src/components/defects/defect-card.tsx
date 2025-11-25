@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
-  Pencil,
   Tag,
   User,
   UserCheck,
@@ -113,16 +112,6 @@ export function DefectCard({
                 <span>{defect.module}</span>
               </CardDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              onClick={() => onEdit(defect)}
-              aria-label="Edit defect"
-            >
-              <Pencil className="size-4" />
-            </Button>
-
             <Select
               value={defect.status}
               onValueChange={handleStatusChange}

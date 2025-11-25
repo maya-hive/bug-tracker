@@ -1,9 +1,21 @@
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from 'convex/_generated/api'
+import { toast } from 'sonner'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { Id } from 'convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
@@ -24,18 +36,64 @@ function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
   )
 }
 
+const statusOptions = [
+  { value: 'open', label: 'Open' },
+  { value: 'fixed', label: 'Fixed' },
+  { value: 'verified', label: 'Verified' },
+  { value: 'reopened', label: 'Reopened' },
+  { value: 'deferred', label: 'Deferred' },
+] as const
+
 function StatusCell({ row }: { row: { original: DefectTableItem } }) {
-  const statusColors = {
-    open: 'default',
-    fixed: 'secondary',
-    verified: 'default',
-    reopened: 'destructive',
-    deferred: 'outline',
-  } as const
+  const updateDefect = useMutation(api.defects.updateDefect)
+  const [statusUpdating, setStatusUpdating] = useState(false)
+
+  const handleStatusChange = async (newStatus: string) => {
+    setStatusUpdating(true)
+    try {
+      await updateDefect({
+        defectId: row.original._id as Id<'defects'>,
+        status: newStatus as DefectTableItem['status'],
+      })
+      toast.success('Status updated successfully')
+    } catch (error) {
+      toast.error('Failed to update status')
+      console.error(error)
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
+  const currentStatus = row.original.status
 
   return (
-    <Badge variant={statusColors[row.original.status]}>
-      {row.original.status}
+    <Select
+      value={currentStatus}
+      onValueChange={handleStatusChange}
+      disabled={statusUpdating}
+    >
+      <SelectTrigger className="w-fit" size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {statusOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
+  const statusLabel =
+    statusOptions.find((opt) => opt.value === row.original.status)?.label ||
+    row.original.status
+
+  return (
+    <Badge variant="outline" className="text-sm">
+      {statusLabel}
     </Badge>
   )
 }
@@ -142,7 +200,63 @@ function ActionsCell({
   )
 }
 
-export function createColumns(
+export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
+  return [
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      cell: ({ row }) => <NameCell row={row} />,
+      enableHiding: false,
+    },
+    {
+      accessorKey: 'projectId',
+      header: 'Project',
+      cell: ({ row }) => <ProjectCell row={row} />,
+    },
+    {
+      accessorKey: 'module',
+      header: 'Module',
+      cell: ({ row }) => <ModuleCell row={row} />,
+    },
+    {
+      accessorKey: 'defectType',
+      header: 'Type',
+      cell: ({ row }) => <DefectTypeCell row={row} />,
+    },
+    {
+      accessorKey: 'severity',
+      header: 'Severity',
+      cell: ({ row }) => <SeverityCell row={row} />,
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => <StatusCellReadOnly row={row} />,
+    },
+    {
+      accessorKey: 'assignedTo',
+      header: 'Assigned To',
+      cell: ({ row }) => <AssignedToCell row={row} />,
+    },
+    {
+      accessorKey: 'reporterId',
+      header: 'Reporter',
+      cell: ({ row }) => <ReporterCell row={row} />,
+    },
+    {
+      accessorKey: 'flags',
+      header: 'Flags',
+      cell: ({ row }) => <FlagsCell row={row} />,
+    },
+    {
+      accessorKey: '_creationTime',
+      header: 'Created',
+      cell: ({ row }) => <CreatedDateCell row={row} />,
+    },
+  ]
+}
+
+export function createDefectsColumns(
   onEdit: (defect: DefectTableItem) => void,
   onDelete: (defect: DefectTableItem) => void,
   onAddComment: (defect: DefectTableItem) => void,
@@ -154,11 +268,6 @@ export function createColumns(
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
       enableHiding: false,
-    },
-    {
-      accessorKey: 'projectId',
-      header: 'Project',
-      cell: ({ row }) => <ProjectCell row={row} />,
     },
     {
       accessorKey: 'module',

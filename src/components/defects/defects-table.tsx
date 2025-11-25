@@ -9,11 +9,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { createColumns } from './defects-table-columns'
 import { DefectsTablePagination } from './defects-table-pagination'
 import { DefectCard } from './defect-card'
 import type { DefectTableItem } from './defects-table.types'
 import type {
+  ColumnDef,
   ColumnFiltersState,
   SortingState,
   VisibilityState,
@@ -29,6 +29,7 @@ import {
 
 export function DefectsTable({
   data: initialData,
+  columns,
   onEdit,
   onDelete,
   onAddComment,
@@ -36,6 +37,7 @@ export function DefectsTable({
   showActions = true,
 }: {
   data: Array<DefectTableItem>
+  columns: Array<ColumnDef<DefectTableItem>>
   onEdit: (defect: DefectTableItem) => void
   onDelete: (defect: DefectTableItem) => void
   onAddComment: (defect: DefectTableItem) => void
@@ -58,11 +60,6 @@ export function DefectsTable({
     pageIndex: 0,
     pageSize: 10,
   })
-
-  const columns = React.useMemo(
-    () => createColumns(onEdit, onDelete, onAddComment, showActions),
-    [onEdit, onDelete, onAddComment, showActions],
-  )
 
   const table = useReactTable({
     data,
