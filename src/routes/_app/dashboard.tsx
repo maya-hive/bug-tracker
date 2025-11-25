@@ -1,14 +1,16 @@
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DefectTableItem } from '~/types/defects-table.type'
+import type { DashboardFilters as DashboardFiltersType } from '~/components/dashboard/dashboard-filters'
 import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
 import { useProject } from '~/hooks/use-project'
+import { DashboardFilters } from '~/components/dashboard/dashboard-filters'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
@@ -16,7 +18,17 @@ export const Route = createFileRoute('/_app/dashboard')({
 
 function Dashboard() {
   const defects = useQuery(api.defects.listDefects)
+  const users = useQuery(api.users.listUsers)
   const [projectId] = useProject()
+
+  // Filter state
+  const [filters, setFilters] = useState<DashboardFiltersType>({
+    severity: null,
+    type: null,
+    assignedTo: null,
+    reporter: null,
+    flags: [],
+  })
 
   const defectsData: Array<DefectTableItem> = useMemo(() => {
     if (defects === undefined) {
@@ -44,15 +56,49 @@ function Dashboard() {
         comments: defect.comments,
       }))
       .filter((defect) => {
-        // If projectId is null (All Projects), show all defects
-        if (projectId === null) {
-          return true
+        if (projectId !== null && defect.projectId !== projectId) {
+          return false
         }
 
-        // Otherwise, filter by projectId
-        return defect.projectId === projectId
+        if (filters.severity !== null && defect.severity !== filters.severity) {
+          return false
+        }
+
+        if (filters.type !== null && defect.defectType !== filters.type) {
+          return false
+        }
+
+        if (filters.assignedTo !== null) {
+          if (filters.assignedTo === 'unassigned') {
+            if (defect.assignedTo) {
+              return false
+            }
+          } else if (defect.assignedTo !== filters.assignedTo) {
+            return false
+          }
+        }
+
+        if (
+          filters.reporter !== null &&
+          defect.reporterId !== filters.reporter
+        ) {
+          return false
+        }
+
+        if (filters.flags.length > 0) {
+          const hasAnyFlag = filters.flags.some((flag) =>
+            defect.flags.includes(
+              flag as 'unit test failure' | 'content issue',
+            ),
+          )
+          if (!hasAnyFlag) {
+            return false
+          }
+        }
+
+        return true
       })
-  }, [defects, projectId])
+  }, [defects, projectId, filters])
 
   const metrics = useMemo(() => {
     const totalBugs = defectsData.filter(
@@ -82,12 +128,19 @@ function Dashboard() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Overview of all bugs and unit test failures
-          </p>
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="shrink-0">
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Overview of all bugs and unit test failures
+            </p>
+          </div>
+          <DashboardFilters
+            filters={filters}
+            users={users}
+            onFiltersChange={setFilters}
+          />
         </div>
       </div>
       <SectionCardWrapper>

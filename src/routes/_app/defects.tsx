@@ -6,11 +6,13 @@ import { toast } from 'sonner'
 import { CirclePlus, LayoutGrid, Table } from 'lucide-react'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import type { DefectsFilters as DefectsFiltersType } from '~/components/defects/defects-filters'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDefectsColumns } from '~/components/defects/defects-table-columns'
 import { EditDefectDialog } from '~/components/defects/edit-defect-dialog'
 import { CreateDefectDialog } from '~/components/defects/create-defect-dialog'
 import { AddCommentDialog } from '~/components/defects/add-comment-dialog'
+import { DefectsFilters } from '~/components/defects/defects-filters'
 import { useProject } from '~/hooks/use-project'
 import { Button } from '~/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
@@ -33,6 +35,7 @@ const DEFECTS_VIEW_MODE_KEY = 'defects-view-mode'
 
 function Defects() {
   const defects = useQuery(api.defects.listDefects)
+  const users = useQuery(api.users.listUsers)
   const [projectId] = useProject()
   const deleteDefect = useMutation(api.defects.deleteDefect)
   const [editingDefect, setEditingDefect] = useState<DefectTableItem | null>(
@@ -53,6 +56,13 @@ function Defects() {
       }
     }
     return 'cards'
+  })
+
+  const [filters, setFilters] = useState<DefectsFiltersType>({
+    severity: null,
+    type: null,
+    assignedTo: null,
+    flags: [],
   })
 
   useEffect(() => {
@@ -115,14 +125,42 @@ function Defects() {
         comments: defect.comments,
       }))
       .filter((defect) => {
-        // If projectId is null (All Projects), show all defects
-        if (projectId === null) {
-          return true
+        if (projectId !== null && defect.projectId !== projectId) {
+          return false
         }
-        // Otherwise, filter by projectId
-        return defect.projectId === projectId
+
+        if (filters.severity !== null && defect.severity !== filters.severity) {
+          return false
+        }
+
+        if (filters.type !== null && defect.defectType !== filters.type) {
+          return false
+        }
+
+        if (filters.assignedTo !== null) {
+          if (filters.assignedTo === 'unassigned') {
+            if (defect.assignedTo) {
+              return false
+            }
+          } else if (defect.assignedTo !== filters.assignedTo) {
+            return false
+          }
+        }
+
+        if (filters.flags.length > 0) {
+          const hasAnyFlag = filters.flags.some((flag) =>
+            defect.flags.includes(
+              flag as 'unit test failure' | 'content issue',
+            ),
+          )
+          if (!hasAnyFlag) {
+            return false
+          }
+        }
+
+        return true
       })
-  }, [defects, projectId])
+  }, [defects, projectId, filters])
 
   const columns = useMemo(
     () =>
@@ -141,14 +179,19 @@ function Defects() {
   return (
     <>
       <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="shrink-0">
             <h1 className="text-2xl font-semibold">Defects</h1>
             <p className="text-muted-foreground">
-              Manage defects and track their status
+              Manage defects assigned to the project
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <DefectsFilters
+              filters={filters}
+              users={users}
+              onFiltersChange={setFilters}
+            />
             <ToggleGroup
               type="single"
               value={viewMode}

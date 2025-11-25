@@ -9,7 +9,6 @@ import {
   ChevronUp,
   MessageSquare,
   Tag,
-  User,
   UserCheck,
   UserRoundPen,
 } from 'lucide-react'

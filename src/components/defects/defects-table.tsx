@@ -31,10 +31,8 @@ export function DefectsTable({
   data: initialData,
   columns,
   onEdit,
-  onDelete,
   onAddComment,
   viewMode = 'cards',
-  showActions = true,
 }: {
   data: Array<DefectTableItem>
   columns: Array<ColumnDef<DefectTableItem>>
