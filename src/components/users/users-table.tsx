@@ -11,7 +11,6 @@ import {
 } from '@tanstack/react-table'
 import { createColumns } from './users-table-columns'
 import { UsersTablePagination } from './users-table-pagination'
-import { UsersTableToolbar } from './users-table-toolbar'
 import type { UserTableItem } from './users-table.types'
 import type {
   ColumnFiltersState,
@@ -42,7 +41,6 @@ export function UsersTable({
     setData(initialData)
   }, [initialData])
 
-  const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -65,13 +63,10 @@ export function UsersTable({
     state: {
       sorting,
       columnVisibility,
-      rowSelection,
       columnFilters,
       pagination,
     },
     getRowId: (row) => row._id,
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -86,8 +81,7 @@ export function UsersTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <UsersTableToolbar table={table} />
-      <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+      <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
@@ -111,10 +105,7 @@ export function UsersTable({
             <TableBody className="**:data-[slot=table-cell]:first:w-8">
               {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
+                  <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(

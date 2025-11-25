@@ -3,8 +3,9 @@ import { Suspense, useMemo } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
+import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DefectTableItem } from '~/types/defects-table.type'
-import { SectionCards } from '~/components/section-cards'
+import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { useProject } from '~/hooks/use-project'
 
@@ -52,13 +53,68 @@ function Dashboard() {
       })
   }, [defects, projectId])
 
+  const metrics = useMemo(() => {
+    const totalBugs = defectsData.filter(
+      (defect) => defect.defectType === 'bug',
+    ).length
+    const openBugs = defectsData.filter(
+      (defect) => defect.status === 'open' || defect.status === 'reopened',
+    ).length
+    const criticalBugs = defectsData.filter(
+      (defect) => defect.severity === 'critical',
+    ).length
+    const unitTestFailures = defectsData.filter((defect) =>
+      defect.flags.includes('unit test failure'),
+    ).length
+
+    return {
+      totalBugs,
+      openBugs,
+      criticalBugs,
+      unitTestFailures,
+    }
+  }, [defectsData])
+
   if (defects === undefined) {
     return null
   }
 
   return (
     <>
-      <SectionCards />
+      <div className="flex items-center justify-between">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of all bugs and unit test failures
+          </p>
+        </div>
+      </div>
+      <SectionCardWrapper>
+        <SectionCard
+          title="Total Bugs"
+          value={metrics.totalBugs}
+          icon={<Crosshair />}
+          description="All reported issues tracked"
+        />
+        <SectionCard
+          title="Open Bugs"
+          value={metrics.openBugs}
+          icon={<CircleAlert />}
+          description="Active issues requiring attention"
+        />
+        <SectionCard
+          title="Critical Bugs"
+          value={metrics.criticalBugs}
+          icon={<AlertTriangle />}
+          description="Requires immediate attention"
+        />
+        <SectionCard
+          title="Unit Test Failures"
+          value={metrics.unitTestFailures}
+          icon={<CircleX />}
+          description="Unit tests failed"
+        />
+      </SectionCardWrapper>
       <Table data={defectsData} />
     </>
   )

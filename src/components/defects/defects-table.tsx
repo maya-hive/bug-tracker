@@ -48,7 +48,6 @@ export function DefectsTable({
     setData(initialData)
   }, [initialData])
 
-  const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -71,13 +70,10 @@ export function DefectsTable({
     state: {
       sorting,
       columnVisibility,
-      rowSelection,
       columnFilters,
       pagination,
     },
     getRowId: (row) => row._id,
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -92,9 +88,8 @@ export function DefectsTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+      <div className="relative flex flex-col gap-4 overflow-auto">
         {viewMode === 'cards' ? (
-          // Card view
           table.getRowModel().rows.length ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
               {table.getRowModel().rows.map((row) => (
@@ -112,7 +107,6 @@ export function DefectsTable({
             </div>
           )
         ) : (
-          // Table view
           <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableHeader className="bg-muted sticky top-0 z-10">
@@ -136,10 +130,7 @@ export function DefectsTable({
               <TableBody className="**:data-[slot=table-cell]:first:w-8">
                 {table.getRowModel().rows.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
-                    >
+                    <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(

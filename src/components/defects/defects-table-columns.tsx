@@ -9,14 +9,6 @@ function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
 }
 
-function DescriptionCell({ row }: { row: { original: DefectTableItem } }) {
-  return (
-    <div className="text-muted-foreground max-w-md truncate">
-      {row.original.description}
-    </div>
-  )
-}
-
 function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
   const severityColors = {
     critical: 'destructive',
@@ -177,11 +169,6 @@ export function createColumns(
       accessorKey: 'defectType',
       header: 'Type',
       cell: ({ row }) => <DefectTypeCell row={row} />,
-    },
-    {
-      accessorKey: 'description',
-      header: 'Description',
-      cell: ({ row }) => <DescriptionCell row={row} />,
     },
     {
       accessorKey: 'severity',

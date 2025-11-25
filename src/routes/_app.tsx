@@ -28,7 +28,7 @@ function AppLayout() {
     <AuthUserContext.Provider value={user as User}>
       <div className="flex-1 flex flex-col overflow-hidden h-screen">
         <TaskHeader />
-        <main className="w-full h-full overflow-x-auto p-8">
+        <main className="w-full h-full overflow-x-auto px-4 lg:px-6 py-6">
           <Outlet />
         </main>
       </div>
