@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useNavigate } from '@tanstack/react-router'
 
@@ -9,9 +9,7 @@ import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { cn } from '~/lib/utils'
@@ -66,15 +64,8 @@ export function NavUser({
           className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
           side="bottom"
         >
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <BadgeCheck />
-              Account
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
-            <LogOut />
+            <LogOut className="text-destructive" />
             Log out
           </DropdownMenuItem>
         </DropdownMenuContent>
