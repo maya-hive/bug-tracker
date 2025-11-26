@@ -21,10 +21,18 @@ import {
   FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
+  role: z.enum(['manager', 'tester', 'developer']),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
@@ -43,6 +51,7 @@ export function CreateUserDialog({
       name: '',
       email: '',
       password: '',
+      role: 'developer' as 'manager' | 'tester' | 'developer',
     },
     validators: {
       onSubmit: createUserSchema,
@@ -54,6 +63,7 @@ export function CreateUserDialog({
           name: value.name,
           email: value.email,
           password: value.password,
+          role: value.role,
         })
 
         toast.success('User created successfully')
@@ -131,6 +141,43 @@ export function CreateUserDialog({
                       aria-invalid={isInvalid}
                       disabled={isSubmitting}
                     />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="role"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Role</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) =>
+                        field.handleChange(
+                          value as z.infer<typeof createUserSchema>['role'],
+                        )
+                      }
+                    >
+                      <SelectTrigger
+                        id={field.name}
+                        className="w-full"
+                        aria-invalid={isInvalid}
+                        disabled={isSubmitting}
+                      >
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="tester">Tester</SelectItem>
+                        <SelectItem value="developer">Developer</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}

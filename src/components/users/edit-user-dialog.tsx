@@ -23,10 +23,18 @@ import {
   FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 const editUserSchema = z.object({
   name: z.string().optional().or(z.literal('')),
   email: z.string().email('Invalid email address'),
+  role: z.enum(['manager', 'tester', 'developer']),
   newPassword: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -50,6 +58,7 @@ export function EditUserDialog({
     defaultValues: {
       name: '',
       email: '',
+      role: 'developer' as 'manager' | 'tester' | 'developer',
       newPassword: '',
     } as z.infer<typeof editUserSchema>,
     validators: {
@@ -64,6 +73,7 @@ export function EditUserDialog({
           userId: user._id as Id<'users'>,
           name: value.name || undefined,
           email: value.email,
+          role: value.role,
         })
 
         // Note: Password change is not implemented in the mutation yet
@@ -92,6 +102,7 @@ export function EditUserDialog({
       form.reset({
         name: user.name || '',
         email: user.email,
+        role: user.role || 'developer',
         newPassword: '',
       })
     }
@@ -161,6 +172,43 @@ export function EditUserDialog({
                       aria-invalid={isInvalid}
                       disabled={isSubmitting}
                     />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="role"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Role</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) =>
+                        field.handleChange(
+                          value as z.infer<typeof editUserSchema>['role'],
+                        )
+                      }
+                    >
+                      <SelectTrigger
+                        id={field.name}
+                        className="w-full"
+                        aria-invalid={isInvalid}
+                        disabled={isSubmitting}
+                      >
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="tester">Tester</SelectItem>
+                        <SelectItem value="developer">Developer</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}

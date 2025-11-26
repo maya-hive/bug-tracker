@@ -7,9 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { SignInForm } from '~/components/auth/sign-in-form'
-import { SignUpForm } from '~/components/auth/sign-up-form'
 
 export const Route = createFileRoute('/auth')({
   component: AuthPage,
@@ -27,38 +25,21 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Welcome</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            Login to your account
+          </CardTitle>
           <CardDescription className="text-center">
-            Sign in to your account or create a new one
+            Enter your email below to login to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs
-            defaultValue="signIn"
-            className="w-full"
-            onValueChange={() => setError(null)}
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signIn">Sign In</TabsTrigger>
-              <TabsTrigger value="signUp">Sign Up</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signIn" className="space-y-4 mt-6">
-              <SignInForm
-                onError={setError}
-                error={error}
-                onSuccess={handleSuccess}
-              />
-            </TabsContent>
-
-            <TabsContent value="signUp" className="space-y-4 mt-6">
-              <SignUpForm
-                onError={setError}
-                error={error}
-                onSuccess={handleSuccess}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-4 mt-6">
+            <SignInForm
+              onError={setError}
+              error={error}
+              onSuccess={handleSuccess}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

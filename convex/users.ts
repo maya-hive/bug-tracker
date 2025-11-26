@@ -1,40 +1,66 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
+import type { Id } from './_generated/dataModel'
 
-/**
- * Create a new user
- */
 export const createUser = mutation({
   args: {
     email: v.string(),
-    name: v.optional(v.string()),
+    name: v.string(),
     password: v.string(),
+    role: v.union(
+      v.literal('manager'),
+      v.literal('tester'),
+      v.literal('developer'),
+    ),
   },
   returns: v.id('users'),
   handler: async (ctx, args) => {
-    // Check if user with this email already exists
     const existingUser = await ctx.db
       .query('users')
-      .filter((q) => q.eq(q.field('email'), args.email))
+      .withIndex('email', (q) => q.eq('email', args.email))
       .first()
 
     if (existingUser) {
       throw new Error('User with this email already exists')
     }
 
-    // Create user using auth store
-    const userId = await ctx.db.insert('users', {
-      name: args.name,
-      email: args.email,
+    // Validate password length (Password provider requires at least 8 characters)
+    if (args.password.length < 8) {
+      throw new Error('Password must be at least 8 characters long')
+    }
+
+    // Create the auth account with password using the store mutation
+    // The Password provider's profile function will create the user in the users table
+    // with email and name. We'll then update that user with the role.
+    // Note: internal.auth.store is registered by convexAuth but may not be in the type definitions
+    const result: {
+      account: { _id: Id<'authAccounts'>; userId: Id<'users'> }
+      user: { _id: Id<'users'> }
+    } = await ctx.runMutation((internal as any).auth.store, {
+      args: {
+        type: 'createAccountFromCredentials',
+        provider: 'password',
+        account: {
+          id: args.email,
+          secret: args.password,
+        },
+        profile: {
+          email: args.email,
+          name: args.name,
+        },
+      },
+    })
+
+    const userId: Id<'users'> = result.user._id
+    await ctx.db.patch(userId, {
+      role: args.role,
     })
 
     return userId
   },
 })
 
-/**
- * List all users
- */
 export const listUsers = query({
   args: {},
   returns: v.array(
@@ -43,6 +69,13 @@ export const listUsers = query({
       _creationTime: v.number(),
       name: v.optional(v.string()),
       email: v.optional(v.string()),
+      role: v.optional(
+        v.union(
+          v.literal('manager'),
+          v.literal('tester'),
+          v.literal('developer'),
+        ),
+      ),
     }),
   ),
   handler: async (ctx) => {
@@ -52,18 +85,23 @@ export const listUsers = query({
       _creationTime: user._creationTime,
       name: user.name,
       email: user.email,
+      role: user.role,
     }))
   },
 })
 
-/**
- * Update user
- */
 export const updateUser = mutation({
   args: {
     userId: v.id('users'),
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    role: v.optional(
+      v.union(
+        v.literal('manager'),
+        v.literal('tester'),
+        v.literal('developer'),
+      ),
+    ),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -75,6 +113,7 @@ export const updateUser = mutation({
     const updates: {
       name?: string
       email?: string
+      role?: 'manager' | 'tester' | 'developer'
     } = {}
 
     if (args.name !== undefined) {
@@ -85,14 +124,15 @@ export const updateUser = mutation({
       updates.email = args.email
     }
 
+    if (args.role !== undefined) {
+      updates.role = args.role
+    }
+
     await ctx.db.patch(args.userId, updates)
     return null
   },
 })
 
-/**
- * Delete user
- */
 export const deleteUser = mutation({
   args: {
     userId: v.id('users'),
@@ -109,11 +149,6 @@ export const deleteUser = mutation({
   },
 })
 
-/**
- * Change user password
- * Note: This updates the account's password hash directly.
- * Password hashing should be done client-side or through the auth API.
- */
 export const changePassword = mutation({
   args: {
     userId: v.id('users'),

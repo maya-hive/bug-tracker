@@ -5,6 +5,7 @@ export const schema = z.object({
   _creationTime: z.number(),
   name: z.string().optional(),
   email: z.string(),
+  role: z.enum(['manager', 'tester', 'developer']).optional(),
 })
 
 export type UserTableItem = z.infer<typeof schema>

@@ -70,6 +70,7 @@ function Users() {
     _creationTime: user._creationTime,
     name: user.name,
     email: user.email as string,
+    role: user.role,
   }))
 
   return (

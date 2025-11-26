@@ -20,6 +20,10 @@ function EmailCell({ row }: { row: { original: UserTableItem } }) {
   return <div className="text-muted-foreground">{row.original.email}</div>
 }
 
+function RoleCell({ row }: { row: { original: UserTableItem } }) {
+  return <div className="text-muted-foreground">{row.original.role}</div>
+}
+
 function CreatedDateCell({ row }: { row: { original: UserTableItem } }) {
   return (
     <div className="text-muted-foreground text-sm">
@@ -76,6 +80,11 @@ export function createColumns(
       accessorKey: 'email',
       header: 'Email',
       cell: ({ row }) => <EmailCell row={row} />,
+    },
+    {
+      accessorKey: 'role',
+      header: 'Role',
+      cell: ({ row }) => <RoleCell row={row} />,
     },
     {
       accessorKey: '_creationTime',
