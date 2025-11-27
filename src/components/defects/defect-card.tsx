@@ -16,6 +16,7 @@ import { format } from 'date-fns'
 import { ImageLightbox } from './image-lightbox'
 import type { DefectTableItem } from './defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import type { Role } from 'convex/lib/permissions'
 import {
   Card,
   CardContent,
@@ -40,14 +41,11 @@ import {
 import { cn } from '~/lib/utils'
 import { ImageZoom } from '~/components/ui/image-zoom'
 import { Skeleton } from '~/components/ui/skeleton'
-
-const statusOptions = [
-  { value: 'open', label: 'Open' },
-  { value: 'fixed', label: 'Fixed' },
-  { value: 'verified', label: 'Verified' },
-  { value: 'reopened', label: 'Reopened' },
-  { value: 'deferred', label: 'Deferred' },
-] as const
+import {
+  getStatusLabel,
+  getStatusOptionsForSelect,
+} from '~/types/defect-status'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 const severityColors = {
   critical: 'destructive',
@@ -66,9 +64,15 @@ export function DefectCard({
 }) {
   const updateDefect = useMutation(api.defects.updateDefect)
   const users = useQuery(api.users.listUsers)
+  const user = useAuthUser()
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  const statusOptions = getStatusOptionsForSelect(
+    user.role as Role,
+    defect.status,
+  )
 
   const imageUrl = useQuery(
     api.defects.getFileUrl,
@@ -94,8 +98,8 @@ export function DefectCard({
   }
 
   const getUserName = (userId: string) => {
-    const user = users?.find((u) => u._id === userId)
-    return user?.name || user?.email || 'Unknown User'
+    const foundUser = users?.find((u) => u._id === userId)
+    return foundUser?.name || foundUser?.email || 'Unknown User'
   }
 
   const comments = defect.comments || []
@@ -120,14 +124,18 @@ export function DefectCard({
               disabled={statusUpdating}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>{getStatusLabel(defect.status)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                {statusOptions
+                  .filter((option) =>
+                    option.restrictTo.includes(user.role as Role),
+                  )
+                  .map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

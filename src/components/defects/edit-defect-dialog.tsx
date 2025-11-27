@@ -7,6 +7,7 @@ import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectTableItem } from './defects-table.types'
+import type { Role } from 'convex/lib/permissions'
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,11 @@ import {
   PopoverTrigger,
 } from '~/components/ui/popover'
 import { ImageDropzone } from '~/components/ui/image-dropzone'
+import {
+  getStatusLabel,
+  getStatusOptionsForSelect,
+} from '~/types/defect-status'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 const editDefectSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
@@ -64,6 +70,7 @@ export function EditDefectDialog({
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
   const projects = useQuery(api.projects.listProjects)
   const users = useQuery(api.users.listUsers)
+  const user = useAuthUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -110,6 +117,7 @@ export function EditDefectDialog({
               : undefined,
           severity: value.severity,
           flags: value.flags,
+          status: value.status,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -386,9 +394,14 @@ export function EditDefectDialog({
                             <SelectItem value="__unassigned__">
                               Unassigned
                             </SelectItem>
-                            {users?.map((user) => (
-                              <SelectItem key={user._id} value={user._id}>
-                                {user.name || user.email || user._id}
+                            {users?.map((userItem) => (
+                              <SelectItem
+                                key={userItem._id}
+                                value={userItem._id}
+                              >
+                                {userItem.name ||
+                                  userItem.email ||
+                                  userItem._id}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -538,6 +551,59 @@ export function EditDefectDialog({
                             </div>
                           </PopoverContent>
                         </Popover>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+                <form.Field
+                  name="status"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    const statusOptions = getStatusOptionsForSelect(
+                      user.role as Role,
+                      field.state.value,
+                    )
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(
+                              value as z.infer<
+                                typeof editDefectSchema
+                              >['status'],
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
+                          >
+                            <SelectValue>
+                              {getStatusLabel(field.state.value)}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions
+                              .filter((option) =>
+                                option.restrictTo.includes(user.role as Role),
+                              )
+                              .map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}

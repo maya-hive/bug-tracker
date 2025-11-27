@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from 'convex/_generated/dataModel'
+import type { Role } from 'convex/lib/permissions'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -16,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import {
+  getStatusLabel,
+  getStatusOptionsForSelect,
+} from '~/types/defect-status'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
@@ -36,15 +42,13 @@ function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
   )
 }
 
-const statusOptions = [
-  { value: 'open', label: 'Open' },
-  { value: 'fixed', label: 'Fixed' },
-  { value: 'verified', label: 'Verified' },
-  { value: 'reopened', label: 'Reopened' },
-  { value: 'deferred', label: 'Deferred' },
-] as const
-
 function StatusCell({ row }: { row: { original: DefectTableItem } }) {
+  const user = useAuthUser()
+  const currentStatus = row.original.status
+  const statusOptions = getStatusOptionsForSelect(
+    user.role as Role,
+    currentStatus,
+  )
   const updateDefect = useMutation(api.defects.updateDefect)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
@@ -64,8 +68,6 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
     }
   }
 
-  const currentStatus = row.original.status
-
   return (
     <Select
       value={currentStatus}
@@ -73,23 +75,23 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
       disabled={statusUpdating}
     >
       <SelectTrigger className="w-fit" size="sm">
-        <SelectValue />
+        <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {statusOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+        {statusOptions
+          .filter((option) => option.restrictTo.includes(user.role as Role))
+          .map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   )
 }
 
 function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
-  const statusLabel =
-    statusOptions.find((opt) => opt.value === row.original.status)?.label ||
-    row.original.status
+  const statusLabel = getStatusLabel(row.original.status)
 
   return (
     <Badge variant="outline" className="text-sm">

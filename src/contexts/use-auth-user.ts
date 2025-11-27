@@ -6,6 +6,7 @@ export const AuthUserContext = createContext<User>({
   name: 'John Doe',
   email: 'john.doe@example.com',
   image: 'https://api.dicebear.com/9.x/glass/svg?seed=1',
+  role: 'developer',
 })
 
 export function useAuthUser() {
