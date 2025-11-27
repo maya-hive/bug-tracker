@@ -9,6 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { CircleOff } from 'lucide-react'
 import { DefectsTablePagination } from './defects-table-pagination'
 import { DefectCard } from './defect-card'
 import type { DefectTableItem } from './defects-table.types'
@@ -18,6 +19,13 @@ import type {
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import {
   Table,
   TableBody,
@@ -97,9 +105,17 @@ export function DefectsTable({
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
-              No results.
-            </div>
+            <Empty className="border">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CircleOff />
+                </EmptyMedia>
+                <EmptyTitle>No Defects Yet</EmptyTitle>
+                <EmptyDescription>
+                  You have not created any resources yet.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )
         ) : (
           <div className="overflow-hidden rounded-lg border">
@@ -142,7 +158,17 @@ export function DefectsTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <CircleOff />
+                          </EmptyMedia>
+                          <EmptyTitle>No Defects Yet</EmptyTitle>
+                          <EmptyDescription>
+                            You have not created any resources yet.
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 )}

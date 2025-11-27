@@ -9,6 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { CircleOff } from 'lucide-react'
 import { createColumns } from './users-table-columns'
 import { UsersTablePagination } from './users-table-pagination'
 import type { UserTableItem } from './users-table.types'
@@ -17,6 +18,13 @@ import type {
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import {
   Table,
   TableBody,
@@ -122,7 +130,17 @@ export function UsersTable({
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No results.
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <CircleOff />
+                        </EmptyMedia>
+                        <EmptyTitle>No Users Yet</EmptyTitle>
+                        <EmptyDescription>
+                          You have not created any users yet.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
                   </TableCell>
                 </TableRow>
               )}

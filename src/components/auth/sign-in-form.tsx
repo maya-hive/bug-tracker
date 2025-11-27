@@ -20,7 +20,6 @@ export function SignInForm({ onError, error, onSuccess }: SignInFormProps) {
     },
     onSubmit: async ({ value }) => {
       try {
-        // FormData is required by Convex auth signIn function
         const formData = new FormData()
         formData.append('email', value.email)
         formData.append('password', value.password)
@@ -29,12 +28,8 @@ export function SignInForm({ onError, error, onSuccess }: SignInFormProps) {
         await signIn('password', formData)
         onSuccess()
       } catch (err) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : 'An error occurred during authentication'
-        onError(errorMessage)
-        throw err // Re-throw to let TanStack Form handle submission state
+        onError('Invalid email or password.')
+        throw err
       }
     },
   })
