@@ -79,6 +79,10 @@ export const listUsers = query({
     }),
   ),
   handler: async (ctx) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const users = await ctx.db.query('users').collect()
     return users.map((user) => ({
       _id: user._id,
@@ -105,6 +109,10 @@ export const updateUser = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const user = await ctx.db.get(args.userId)
     if (!user) {
       throw new Error('User not found')
@@ -139,6 +147,10 @@ export const deleteUser = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const user = await ctx.db.get(args.userId)
     if (!user) {
       throw new Error('User not found')
@@ -156,6 +168,10 @@ export const changePassword = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const user = await ctx.db.get(args.userId)
     if (!user) {
       throw new Error('User not found')

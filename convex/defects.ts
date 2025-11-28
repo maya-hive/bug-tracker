@@ -75,6 +75,10 @@ export const listDefects = query({
     }),
   ),
   handler: async (ctx) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const defects = await ctx.db.query('defects').collect()
     const results = []
     for (const defect of defects) {
@@ -143,6 +147,10 @@ export const createDefect = mutation({
   },
   returns: v.id('defects'),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const reporterId = await getAuthUserId(ctx)
     if (!reporterId) {
       throw new Error('Unauthorized')
@@ -203,6 +211,10 @@ export const updateDefect = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const defect = await ctx.db.get(args.defectId)
     if (!defect) {
       throw new Error('Defect not found')
@@ -314,6 +326,10 @@ export const getDefect = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const defect = await ctx.db.get(args.defectId)
     if (!defect) {
       return null
@@ -348,6 +364,10 @@ export const addComment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const defect = await ctx.db.get(args.defectId)
     if (!defect) {
       throw new Error('Defect not found')
@@ -381,6 +401,10 @@ export const deleteDefect = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const defect = await ctx.db.get(args.defectId)
     if (!defect) {
       throw new Error('Defect not found')

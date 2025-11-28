@@ -14,6 +14,10 @@ export const listProjects = query({
     }),
   ),
   handler: async (ctx) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const projects = await ctx.db.query('projects').collect()
     return projects.map((project) => ({
       _id: project._id,
@@ -32,6 +36,10 @@ export const createProject = mutation({
   },
   returns: v.id('projects'),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     return await ctx.db.insert('projects', {
       name: args.name,
     })
@@ -48,6 +56,10 @@ export const updateProject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const project = await ctx.db.get(args.projectId)
     if (!project) {
       throw new Error('Project not found')
@@ -75,6 +87,10 @@ export const deleteProject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
     const project = await ctx.db.get(args.projectId)
     if (!project) {
       throw new Error('Project not found')

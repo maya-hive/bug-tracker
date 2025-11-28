@@ -1,9 +1,10 @@
 import { Suspense, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus } from 'lucide-react'
+import { VALID_ROLES } from 'convex/lib/permissions'
 import type { UserTableItem } from '~/components/users/users-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import { UsersTable } from '~/components/users/users-table'
@@ -20,12 +21,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 export const Route = createFileRoute('/_app/users')({
   component: Users,
 })
 
 function Users() {
+  const authUser = useAuthUser()
+  const navigate = useNavigate()
+
+  if (authUser.role !== VALID_ROLES.MANAGER) {
+    return navigate({ to: '/dashboard', replace: true })
+  }
+
   const users = useQuery(api.users.listUsers)
   const deleteUser = useMutation(api.users.deleteUser)
   const [editingUser, setEditingUser] = useState<UserTableItem | null>(null)

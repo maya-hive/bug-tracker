@@ -1,9 +1,11 @@
 import { Suspense, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus } from 'lucide-react'
+import { VALID_ROLES } from 'convex/lib/permissions'
+import type { Role } from 'convex/lib/permissions'
 import type { ProjectTableItem } from '~/components/projects/projects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import { ProjectsTable } from '~/components/projects/projects-table'
@@ -20,12 +22,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 export const Route = createFileRoute('/_app/projects')({
   component: Projects,
 })
 
 function Projects() {
+  const authUser = useAuthUser()
+  const navigate = useNavigate()
+
+  if (
+    !(
+      [VALID_ROLES.MANAGER, VALID_ROLES.TESTER] as ReadonlyArray<Role>
+    ).includes(authUser.role)
+  ) {
+    return navigate({ to: '/dashboard', replace: true })
+  }
+
   const projects = useQuery(api.projects.listProjects)
   const deleteProject = useMutation(api.projects.deleteProject)
   const [editingProject, setEditingProject] = useState<ProjectTableItem | null>(
