@@ -1,4 +1,4 @@
-import { MessageSquare, Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from 'convex/_generated/dataModel'
-import type { Role } from 'convex/lib/permissions'
+import type { DefectSeverity, DefectStatus } from 'convex/lib/validators'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -21,18 +21,21 @@ import {
   getStatusLabel,
   getStatusOptionsForSelect,
 } from '~/types/defect-status'
-import { useAuthUser } from '~/contexts/use-auth-user'
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
 }
 
 function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
-  const severityColors = {
+  const severityColors: Record<
+    DefectSeverity,
+    'destructive' | 'default' | 'secondary'
+  > = {
+    blocker: 'destructive',
     critical: 'destructive',
-    high: 'destructive',
+    major: 'destructive',
     medium: 'default',
-    cosmetic: 'secondary',
+    minor: 'secondary',
   } as const
 
   return (
@@ -43,12 +46,8 @@ function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function StatusCell({ row }: { row: { original: DefectTableItem } }) {
-  const user = useAuthUser()
   const currentStatus = row.original.status
-  const statusOptions = getStatusOptionsForSelect(
-    user.role as Role,
-    currentStatus,
-  )
+  const statusOptions = getStatusOptionsForSelect()
   const updateDefect = useMutation(api.defects.updateDefect)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
@@ -57,7 +56,7 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
     try {
       await updateDefect({
         defectId: row.original._id as Id<'defects'>,
-        status: newStatus as DefectTableItem['status'],
+        status: newStatus as DefectStatus,
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -78,13 +77,11 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
         <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {statusOptions
-          .filter((option) => option.restrictTo.includes(user.role as Role))
-          .map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
+        {statusOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   )
@@ -104,16 +101,20 @@ function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="text-sm font-medium">{row.original.projectName}</div>
 }
 
-function ModuleCell({ row }: { row: { original: DefectTableItem } }) {
-  return <div className="text-sm">{row.original.module}</div>
+function TypeCell({ row }: { row: { original: DefectTableItem } }) {
+  return <Badge variant="default">{row.original.type}</Badge>
 }
 
-function DefectTypeCell({ row }: { row: { original: DefectTableItem } }) {
+function PriorityCell({ row }: { row: { original: DefectTableItem } }) {
+  const priorityColors = {
+    low: 'secondary',
+    medium: 'default',
+    high: 'destructive',
+  } as const
+
   return (
-    <Badge
-      variant={row.original.defectType === 'bug' ? 'destructive' : 'default'}
-    >
-      {row.original.defectType}
+    <Badge variant={priorityColors[row.original.priority]}>
+      {row.original.priority}
     </Badge>
   )
 }
@@ -121,7 +122,7 @@ function DefectTypeCell({ row }: { row: { original: DefectTableItem } }) {
 function AssignedToCell({ row }: { row: { original: DefectTableItem } }) {
   return (
     <div className="text-sm text-muted-foreground">
-      {row.original.assignedToName || 'Unassigned'}
+      {row.original.assignedToName || 'Unknown'}
     </div>
   )
 }
@@ -130,22 +131,6 @@ function ReporterCell({ row }: { row: { original: DefectTableItem } }) {
   return (
     <div className="text-sm text-muted-foreground">
       {row.original.reporterName}
-    </div>
-  )
-}
-
-function FlagsCell({ row }: { row: { original: DefectTableItem } }) {
-  const flags = row.original.flags
-  if (flags.length === 0) {
-    return <div className="text-sm text-muted-foreground">No flags</div>
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {flags.map((flag, index) => (
-        <Badge key={index} variant="outline" className="text-xs">
-          {flag}
-        </Badge>
-      ))}
     </div>
   )
 }
@@ -162,24 +147,13 @@ function ActionsCell({
   row,
   onEdit,
   onDelete,
-  onAddComment,
 }: {
   row: { original: DefectTableItem }
   onEdit: (defect: DefectTableItem) => void
   onDelete: (defect: DefectTableItem) => void
-  onAddComment: (defect: DefectTableItem) => void
 }) {
   return (
     <div className="flex items-center justify-end gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        onClick={() => onAddComment(row.original)}
-        aria-label="Add comment"
-      >
-        <MessageSquare className="size-4" />
-      </Button>
       <Button
         variant="ghost"
         size="icon"
@@ -215,9 +189,14 @@ export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
       cell: ({ row }) => <ProjectCell row={row} />,
     },
     {
-      accessorKey: 'defectType',
+      accessorKey: 'type',
       header: 'Type',
-      cell: ({ row }) => <DefectTypeCell row={row} />,
+      cell: ({ row }) => <TypeCell row={row} />,
+    },
+    {
+      accessorKey: 'priority',
+      header: 'Priority',
+      cell: ({ row }) => <PriorityCell row={row} />,
     },
     {
       accessorKey: 'severity',
@@ -240,11 +219,6 @@ export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
       cell: ({ row }) => <ReporterCell row={row} />,
     },
     {
-      accessorKey: 'flags',
-      header: 'Flags',
-      cell: ({ row }) => <FlagsCell row={row} />,
-    },
-    {
       accessorKey: '_creationTime',
       header: 'Created',
       cell: ({ row }) => <CreatedDateCell row={row} />,
@@ -255,7 +229,6 @@ export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
 export function createDefectsColumns(
   onEdit: (defect: DefectTableItem) => void,
   onDelete: (defect: DefectTableItem) => void,
-  onAddComment: (defect: DefectTableItem) => void,
   showActions: boolean = true,
 ): Array<ColumnDef<DefectTableItem>> {
   const columns: Array<ColumnDef<DefectTableItem>> = [
@@ -265,14 +238,14 @@ export function createDefectsColumns(
       cell: ({ row }) => <NameCell row={row} />,
     },
     {
-      accessorKey: 'module',
-      header: 'Module',
-      cell: ({ row }) => <ModuleCell row={row} />,
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => <TypeCell row={row} />,
     },
     {
-      accessorKey: 'defectType',
-      header: 'Type',
-      cell: ({ row }) => <DefectTypeCell row={row} />,
+      accessorKey: 'priority',
+      header: 'Priority',
+      cell: ({ row }) => <PriorityCell row={row} />,
     },
     {
       accessorKey: 'severity',
@@ -295,11 +268,6 @@ export function createDefectsColumns(
       cell: ({ row }) => <ReporterCell row={row} />,
     },
     {
-      accessorKey: 'flags',
-      header: 'Flags',
-      cell: ({ row }) => <FlagsCell row={row} />,
-    },
-    {
       accessorKey: '_creationTime',
       header: 'Created',
       cell: ({ row }) => <CreatedDateCell row={row} />,
@@ -311,12 +279,7 @@ export function createDefectsColumns(
       id: 'actions',
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <ActionsCell
-          row={row}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onAddComment={onAddComment}
-        />
+        <ActionsCell row={row} onEdit={onEdit} onDelete={onDelete} />
       ),
       enableSorting: false,
     })

@@ -4,8 +4,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
-import type { DefectTableItem } from '~/types/defects-table.type'
 import type { DashboardFilters as DashboardFiltersType } from '~/components/dashboard/dashboard-filters'
+import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
@@ -25,9 +25,9 @@ function Dashboard() {
   const [filters, setFilters] = useState<DashboardFiltersType>({
     severity: null,
     type: null,
+    priority: null,
     assignedTo: null,
     reporter: null,
-    flags: [],
   })
 
   const defectsData: Array<DefectTableItem> = useMemo(() => {
@@ -42,8 +42,7 @@ function Dashboard() {
         projectId: defect.projectId,
         projectName: defect.projectName,
         name: defect.name,
-        module: defect.module,
-        defectType: defect.defectType,
+        type: defect.type,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -51,7 +50,7 @@ function Dashboard() {
         reporterId: defect.reporterId,
         reporterName: defect.reporterName,
         severity: defect.severity,
-        flags: defect.flags,
+        priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
       }))
@@ -64,16 +63,16 @@ function Dashboard() {
           return false
         }
 
-        if (filters.type !== null && defect.defectType !== filters.type) {
+        if (filters.type !== null && defect.type !== filters.type) {
+          return false
+        }
+
+        if (filters.priority !== null && defect.priority !== filters.priority) {
           return false
         }
 
         if (filters.assignedTo !== null) {
-          if (filters.assignedTo === 'unassigned') {
-            if (defect.assignedTo) {
-              return false
-            }
-          } else if (defect.assignedTo !== filters.assignedTo) {
+          if (defect.assignedTo !== filters.assignedTo) {
             return false
           }
         }
@@ -85,33 +84,20 @@ function Dashboard() {
           return false
         }
 
-        if (filters.flags.length > 0) {
-          const hasAnyFlag = filters.flags.some((flag) =>
-            defect.flags.includes(
-              flag as 'unit test failure' | 'content issue',
-            ),
-          )
-          if (!hasAnyFlag) {
-            return false
-          }
-        }
-
         return true
       })
   }, [defects, projectId, filters])
 
   const metrics = useMemo(() => {
-    const totalBugs = defectsData.filter(
-      (defect) => defect.defectType === 'bug',
-    ).length
+    const totalBugs = defectsData.length
     const openBugs = defectsData.filter(
       (defect) => defect.status === 'open' || defect.status === 'reopened',
     ).length
     const criticalBugs = defectsData.filter(
       (defect) => defect.severity === 'critical',
     ).length
-    const unitTestFailures = defectsData.filter((defect) =>
-      defect.flags.includes('unit test failure'),
+    const unitTestFailures = defectsData.filter(
+      (defect) => defect.type === 'unit test failure',
     ).length
 
     return {

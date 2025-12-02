@@ -1,31 +1,7 @@
-import { z } from 'zod'
+import type { FunctionReturnType } from 'convex/server'
+import type { api } from 'convex/_generated/api'
 
-export const schema = z.object({
-  _id: z.string(),
-  _creationTime: z.number(),
-  projectId: z.string(),
-  projectName: z.string(),
-  name: z.string(),
-  module: z.string(),
-  defectType: z.enum(['bug', 'improvement']),
-  description: z.string(),
-  screenshot: z.string().optional(),
-  assignedTo: z.string().optional(),
-  assignedToName: z.string().optional(),
-  reporterId: z.string(),
-  reporterName: z.string(),
-  severity: z.enum(['cosmetic', 'medium', 'high', 'critical']),
-  flags: z.array(z.enum(['unit test failure', 'content issue'])),
-  status: z.enum(['open', 'fixed', 'verified', 'reopened', 'deferred']),
-  comments: z
-    .array(
-      z.object({
-        text: z.string(),
-        authorId: z.string(),
-        timestamp: z.number(),
-      }),
-    )
-    .optional(),
-})
-
-export type DefectTableItem = z.infer<typeof schema>
+// Use the actual return type from the query - this automatically stays in sync with the backend
+export type DefectTableItem = FunctionReturnType<
+  typeof api.defects.listDefects
+>[number]

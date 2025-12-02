@@ -61,8 +61,8 @@ function Defects() {
   const [filters, setFilters] = useState<DefectsFiltersType>({
     severity: null,
     type: null,
+    priority: null,
     assignedTo: null,
-    flags: [],
   })
 
   useEffect(() => {
@@ -111,8 +111,7 @@ function Defects() {
         projectId: defect.projectId,
         projectName: defect.projectName,
         name: defect.name,
-        module: defect.module,
-        defectType: defect.defectType,
+        type: defect.type,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -120,7 +119,7 @@ function Defects() {
         reporterId: defect.reporterId,
         reporterName: defect.reporterName,
         severity: defect.severity,
-        flags: defect.flags,
+        priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
       }))
@@ -133,27 +132,16 @@ function Defects() {
           return false
         }
 
-        if (filters.type !== null && defect.defectType !== filters.type) {
+        if (filters.type !== null && defect.type !== filters.type) {
+          return false
+        }
+
+        if (filters.priority !== null && defect.priority !== filters.priority) {
           return false
         }
 
         if (filters.assignedTo !== null) {
-          if (filters.assignedTo === 'unassigned') {
-            if (defect.assignedTo) {
-              return false
-            }
-          } else if (defect.assignedTo !== filters.assignedTo) {
-            return false
-          }
-        }
-
-        if (filters.flags.length > 0) {
-          const hasAnyFlag = filters.flags.some((flag) =>
-            defect.flags.includes(
-              flag as 'unit test failure' | 'content issue',
-            ),
-          )
-          if (!hasAnyFlag) {
+          if (defect.assignedTo !== filters.assignedTo) {
             return false
           }
         }
@@ -163,8 +151,7 @@ function Defects() {
   }, [defects, projectId, filters])
 
   const columns = useMemo(
-    () =>
-      createDefectsColumns(handleEdit, handleDelete, handleAddComment, true),
+    () => createDefectsColumns(handleEdit, handleDelete),
     [handleEdit, handleDelete, handleAddComment],
   )
 

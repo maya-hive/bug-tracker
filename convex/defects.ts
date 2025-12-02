@@ -1,7 +1,13 @@
 import { getAuthUserId } from '@convex-dev/auth/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { Id } from './_generated/dataModel'
+import {
+  defectPriorityValidator,
+  defectSeverityValidator,
+  defectStatusValidator,
+  defectTypeValidator,
+} from './lib/validators'
+import type { Doc } from './_generated/dataModel'
 
 /**
  * Generate an upload URL for file attachment
@@ -39,30 +45,16 @@ export const listDefects = query({
       projectId: v.id('projects'),
       projectName: v.string(),
       name: v.string(),
-      module: v.string(),
-      defectType: v.union(v.literal('bug'), v.literal('improvement')),
+      type: defectTypeValidator,
       description: v.string(),
       screenshot: v.optional(v.id('_storage')),
       assignedTo: v.optional(v.id('users')),
       assignedToName: v.optional(v.string()),
       reporterId: v.id('users'),
       reporterName: v.string(),
-      severity: v.union(
-        v.literal('cosmetic'),
-        v.literal('medium'),
-        v.literal('high'),
-        v.literal('critical'),
-      ),
-      flags: v.array(
-        v.union(v.literal('unit test failure'), v.literal('content issue')),
-      ),
-      status: v.union(
-        v.literal('open'),
-        v.literal('fixed'),
-        v.literal('verified'),
-        v.literal('reopened'),
-        v.literal('deferred'),
-      ),
+      severity: defectSeverityValidator,
+      priority: defectPriorityValidator,
+      status: defectStatusValidator,
       comments: v.optional(
         v.array(
           v.object({
@@ -94,8 +86,7 @@ export const listDefects = query({
         projectId: defect.projectId,
         projectName: project?.name ?? 'Unknown Project',
         name: defect.name,
-        module: defect.module,
-        defectType: defect.defectType,
+        type: defect.type,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -105,7 +96,7 @@ export const listDefects = query({
         reporterId: defect.reporterId,
         reporterName: reporter?.name || reporter?.email || 'Unknown Reporter',
         severity: defect.severity,
-        flags: defect.flags,
+        priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
       })
@@ -121,29 +112,13 @@ export const createDefect = mutation({
   args: {
     projectId: v.id('projects'),
     name: v.string(),
-    module: v.string(),
-    defectType: v.union(v.literal('bug'), v.literal('improvement')),
+    type: defectTypeValidator,
     description: v.string(),
     screenshot: v.optional(v.id('_storage')),
-    assignedTo: v.optional(v.id('users')),
-    severity: v.union(
-      v.literal('cosmetic'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical'),
-    ),
-    flags: v.optional(
-      v.array(
-        v.union(v.literal('unit test failure'), v.literal('content issue')),
-      ),
-    ),
-    status: v.union(
-      v.literal('open'),
-      v.literal('fixed'),
-      v.literal('verified'),
-      v.literal('reopened'),
-      v.literal('deferred'),
-    ),
+    assignedTo: v.id('users'),
+    severity: defectSeverityValidator,
+    priority: defectPriorityValidator,
+    status: defectStatusValidator,
   },
   returns: v.id('defects'),
   handler: async (ctx, args) => {
@@ -159,14 +134,13 @@ export const createDefect = mutation({
     return await ctx.db.insert('defects', {
       projectId: args.projectId,
       name: args.name,
-      module: args.module,
-      defectType: args.defectType,
+      type: args.type,
       description: args.description,
       screenshot: args.screenshot,
       assignedTo: args.assignedTo,
       reporterId,
       severity: args.severity,
-      flags: args.flags ?? [],
+      priority: args.priority,
       status: args.status,
       comments: [],
     })
@@ -181,33 +155,13 @@ export const updateDefect = mutation({
     defectId: v.id('defects'),
     projectId: v.optional(v.id('projects')),
     name: v.optional(v.string()),
-    module: v.optional(v.string()),
-    defectType: v.optional(v.union(v.literal('bug'), v.literal('improvement'))),
+    type: v.optional(defectTypeValidator),
     description: v.optional(v.string()),
     screenshot: v.optional(v.id('_storage')),
     assignedTo: v.optional(v.id('users')),
-    severity: v.optional(
-      v.union(
-        v.literal('cosmetic'),
-        v.literal('medium'),
-        v.literal('high'),
-        v.literal('critical'),
-      ),
-    ),
-    flags: v.optional(
-      v.array(
-        v.union(v.literal('unit test failure'), v.literal('content issue')),
-      ),
-    ),
-    status: v.optional(
-      v.union(
-        v.literal('open'),
-        v.literal('fixed'),
-        v.literal('verified'),
-        v.literal('reopened'),
-        v.literal('deferred'),
-      ),
-    ),
+    severity: v.optional(defectSeverityValidator),
+    priority: v.optional(defectPriorityValidator),
+    status: v.optional(defectStatusValidator),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -220,18 +174,20 @@ export const updateDefect = mutation({
       throw new Error('Defect not found')
     }
 
-    const updates: {
-      projectId?: Id<'projects'>
-      name?: string
-      module?: string
-      defectType?: 'bug' | 'improvement'
-      description?: string
-      screenshot?: Id<'_storage'>
-      assignedTo?: Id<'users'>
-      severity?: 'cosmetic' | 'medium' | 'high' | 'critical'
-      flags?: Array<'unit test failure' | 'content issue'>
-      status?: 'open' | 'fixed' | 'verified' | 'reopened' | 'deferred'
-    } = {}
+    const updates: Partial<
+      Pick<
+        Doc<'defects'>,
+        | 'projectId'
+        | 'name'
+        | 'type'
+        | 'description'
+        | 'screenshot'
+        | 'assignedTo'
+        | 'severity'
+        | 'priority'
+        | 'status'
+      >
+    > = {}
 
     if (args.projectId !== undefined) {
       updates.projectId = args.projectId
@@ -241,12 +197,8 @@ export const updateDefect = mutation({
       updates.name = args.name
     }
 
-    if (args.module !== undefined) {
-      updates.module = args.module
-    }
-
-    if (args.defectType !== undefined) {
-      updates.defectType = args.defectType
+    if (args.type !== undefined) {
+      updates.type = args.type
     }
 
     if (args.description !== undefined) {
@@ -265,8 +217,8 @@ export const updateDefect = mutation({
       updates.severity = args.severity
     }
 
-    if (args.flags !== undefined) {
-      updates.flags = args.flags
+    if (args.priority !== undefined) {
+      updates.priority = args.priority
     }
 
     if (args.status !== undefined) {
@@ -292,28 +244,14 @@ export const getDefect = query({
       _creationTime: v.number(),
       projectId: v.id('projects'),
       name: v.string(),
-      module: v.string(),
-      defectType: v.union(v.literal('bug'), v.literal('improvement')),
+      type: defectTypeValidator,
       description: v.string(),
       screenshot: v.optional(v.id('_storage')),
       assignedTo: v.optional(v.id('users')),
       reporterId: v.id('users'),
-      severity: v.union(
-        v.literal('cosmetic'),
-        v.literal('medium'),
-        v.literal('high'),
-        v.literal('critical'),
-      ),
-      flags: v.array(
-        v.union(v.literal('unit test failure'), v.literal('content issue')),
-      ),
-      status: v.union(
-        v.literal('open'),
-        v.literal('fixed'),
-        v.literal('verified'),
-        v.literal('reopened'),
-        v.literal('deferred'),
-      ),
+      severity: defectSeverityValidator,
+      priority: defectPriorityValidator,
+      status: defectStatusValidator,
       comments: v.optional(
         v.array(
           v.object({
@@ -340,14 +278,13 @@ export const getDefect = query({
       _creationTime: defect._creationTime,
       projectId: defect.projectId,
       name: defect.name,
-      module: defect.module,
-      defectType: defect.defectType,
+      type: defect.type,
       description: defect.description,
       screenshot: defect.screenshot,
       assignedTo: defect.assignedTo,
       reporterId: defect.reporterId,
       severity: defect.severity,
-      flags: defect.flags,
+      priority: defect.priority,
       status: defect.status,
       comments: defect.comments,
     }

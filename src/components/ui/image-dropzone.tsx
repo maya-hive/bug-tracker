@@ -174,7 +174,7 @@ export function ImageDropzone({
               <p className="text-sm font-medium">
                 {isDragActive
                   ? 'Drop the image here'
-                  : 'Drag & drop an image here'}
+                  : 'Drag & drop or paste from clipboard'}
               </p>
               <div className="flex flex-col items-center justify-center gap-2">
                 <Button

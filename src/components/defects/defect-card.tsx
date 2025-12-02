@@ -16,14 +16,8 @@ import { format } from 'date-fns'
 import { ImageLightbox } from './image-lightbox'
 import type { DefectTableItem } from './defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
-import type { Role } from 'convex/lib/permissions'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import type { DefectStatus } from 'convex/lib/validators'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -45,13 +39,13 @@ import {
   getStatusLabel,
   getStatusOptionsForSelect,
 } from '~/types/defect-status'
-import { useAuthUser } from '~/contexts/use-auth-user'
 
 const severityColors = {
+  blocker: 'destructive',
   critical: 'destructive',
-  high: 'destructive',
+  major: 'destructive',
   medium: 'default',
-  cosmetic: 'secondary',
+  minor: 'secondary',
 } as const
 
 export function DefectCard({
@@ -64,15 +58,11 @@ export function DefectCard({
 }) {
   const updateDefect = useMutation(api.defects.updateDefect)
   const users = useQuery(api.users.listUsers)
-  const user = useAuthUser()
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
-  const statusOptions = getStatusOptionsForSelect(
-    user.role as Role,
-    defect.status,
-  )
+  const statusOptions = getStatusOptionsForSelect()
 
   const imageUrl = useQuery(
     api.defects.getFileUrl,
@@ -86,7 +76,7 @@ export function DefectCard({
     try {
       await updateDefect({
         defectId: defect._id as Id<'defects'>,
-        status: newStatus as DefectTableItem['status'],
+        status: newStatus as DefectStatus,
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -114,9 +104,6 @@ export function DefectCard({
               <CardTitle className="text-lg font-semibold leading-tight line-clamp-2">
                 {defect.name}
               </CardTitle>
-              <CardDescription className="text-sm flex items-center gap-1.5">
-                <span>{defect.module}</span>
-              </CardDescription>
             </div>
             <Select
               value={defect.status}
@@ -127,26 +114,19 @@ export function DefectCard({
                 <SelectValue>{getStatusLabel(defect.status)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {statusOptions
-                  .filter((option) =>
-                    option.restrictTo.includes(user.role as Role),
-                  )
-                  .map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant={defect.defectType === 'bug' ? 'destructive' : 'default'}
-              className="gap-1.5"
-            >
+            <Badge variant="default" className="gap-1.5">
               <AlertCircle className="size-3" />
-              {defect.defectType}
+              {defect.type}
             </Badge>
             <Badge
               variant={severityColors[defect.severity]}
@@ -155,12 +135,10 @@ export function DefectCard({
               <Activity className="size-3" />
               {defect.severity}
             </Badge>
-            {defect.flags.length > 0 && (
-              <Badge variant="outline" className="text-xs gap-1.5">
-                <Tag className="size-3" />
-                {defect.flags.length} flag{defect.flags.length > 1 ? 's' : ''}
-              </Badge>
-            )}
+            <Badge variant="outline" className="text-xs gap-1.5">
+              <Tag className="size-3" />
+              {defect.priority}
+            </Badge>
           </div>
         </CardHeader>
 

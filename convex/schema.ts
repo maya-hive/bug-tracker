@@ -1,6 +1,12 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { authTables } from '@convex-dev/auth/server'
+import {
+  defectPriorityValidator,
+  defectSeverityValidator,
+  defectStatusValidator,
+  defectTypeValidator,
+} from './lib/validators'
 
 export default defineSchema({
   ...authTables,
@@ -28,28 +34,14 @@ export default defineSchema({
   defects: defineTable({
     projectId: v.id('projects'),
     name: v.string(),
-    module: v.string(),
-    defectType: v.union(v.literal('bug'), v.literal('improvement')),
     description: v.string(),
-    screenshot: v.optional(v.id('_storage')),
-    assignedTo: v.optional(v.id('users')),
+    assignedTo: v.id('users'),
     reporterId: v.id('users'),
-    severity: v.union(
-      v.literal('cosmetic'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical'),
-    ),
-    flags: v.array(
-      v.union(v.literal('unit test failure'), v.literal('content issue')),
-    ),
-    status: v.union(
-      v.literal('open'),
-      v.literal('fixed'),
-      v.literal('verified'),
-      v.literal('reopened'),
-      v.literal('deferred'),
-    ),
+    severity: defectSeverityValidator,
+    priority: defectPriorityValidator,
+    type: defectTypeValidator,
+    status: defectStatusValidator,
+    screenshot: v.optional(v.id('_storage')),
     comments: v.optional(
       v.array(
         v.object({

@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { ChevronsUpDown } from 'lucide-react'
 
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectTableItem } from './defects-table.types'
-import type { Role } from 'convex/lib/permissions'
+import type {
+  DefectPriority,
+  DefectSeverity,
+  DefectStatus,
+  DefectType,
+} from 'convex/lib/validators'
+import {
+  DEFECT_PRIORITIES,
+  DEFECT_SEVERITIES,
+  DEFECT_TYPES,
+} from '~/lib/defect-constants'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +30,6 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
-import { Checkbox } from '~/components/ui/checkbox'
 import {
   Field,
   FieldError,
@@ -38,23 +48,58 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '~/components/ui/command'
 import { ImageDropzone } from '~/components/ui/image-dropzone'
 import {
   getStatusLabel,
   getStatusOptionsForSelect,
 } from '~/types/defect-status'
-import { useAuthUser } from '~/contexts/use-auth-user'
 
 const editDefectSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
   name: z.string().min(1, 'Name is required'),
-  module: z.string().min(1, 'Module is required'),
-  defectType: z.enum(['bug', 'improvement']),
+  type: z
+    .union([
+      z.literal(''),
+      z.enum([
+        'functional',
+        'ui and usability',
+        'content',
+        'improvement request',
+        'unit test failure',
+      ]),
+    ])
+    .refine((val) => val !== '', 'Type is required')
+    .transform((val) => val as Exclude<typeof val, ''>),
   description: z.string().min(1, 'Description is required'),
-  assignedTo: z.string().optional(),
-  severity: z.enum(['cosmetic', 'medium', 'high', 'critical']),
-  flags: z.array(z.enum(['unit test failure', 'content issue'])).optional(),
-  status: z.enum(['open', 'fixed', 'verified', 'reopened', 'deferred']),
+  assignedTo: z.string().min(1, 'Assigned To is required'),
+  severity: z
+    .union([
+      z.literal(''),
+      z.enum(['minor', 'medium', 'major', 'critical', 'blocker']),
+    ])
+    .refine((val) => val !== '', 'Severity is required')
+    .transform((val) => val as Exclude<typeof val, ''>),
+  priority: z
+    .union([z.literal(''), z.enum(['low', 'medium', 'high'])])
+    .refine((val) => val !== '', 'Priority is required')
+    .transform((val) => val as Exclude<typeof val, ''>),
+  status: z.enum([
+    'open',
+    'in progress',
+    'fixed',
+    'verified',
+    'reopened',
+    'deferred',
+    'hold',
+  ] as const),
 })
 
 export function EditDefectDialog({
@@ -70,11 +115,11 @@ export function EditDefectDialog({
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
   const projects = useQuery(api.projects.listProjects)
   const users = useQuery(api.users.listUsers)
-  const user = useAuthUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [assignedToOpen, setAssignedToOpen] = useState(false)
 
   const existingScreenshotUrl = useQuery(
     api.defects.getFileUrl,
@@ -87,16 +132,14 @@ export function EditDefectDialog({
     defaultValues: {
       projectId: defect?.projectId || '',
       name: defect?.name || '',
-      module: defect?.module || '',
-      defectType: defect?.defectType || 'bug',
+      type: defect?.type || '',
       description: defect?.description || '',
-      assignedTo: defect?.assignedTo || '__unassigned__',
-      severity: defect?.severity || 'medium',
-      flags: defect?.flags || [],
+      assignedTo: defect?.assignedTo || '',
+      severity: defect?.severity || '',
+      priority: defect?.priority || '',
       status: defect?.status || 'open',
     },
     validators: {
-      // @ts-expect-error
       onSubmit: editDefectSchema,
     },
     onSubmit: async ({ value }) => {
@@ -108,16 +151,12 @@ export function EditDefectDialog({
           defectId: defect._id as Id<'defects'>,
           projectId: value.projectId as Id<'projects'>,
           name: value.name,
-          module: value.module,
-          defectType: value.defectType,
+          type: value.type as DefectType,
           description: value.description,
-          assignedTo:
-            value.assignedTo && value.assignedTo !== '__unassigned__'
-              ? (value.assignedTo as Id<'users'>)
-              : undefined,
-          severity: value.severity,
-          flags: value.flags,
-          status: value.status,
+          assignedTo: value.assignedTo as Id<'users'>,
+          severity: value.severity as DefectSeverity,
+          priority: value.priority as DefectPriority,
+          status: value.status as DefectStatus,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -139,12 +178,11 @@ export function EditDefectDialog({
       form.reset({
         projectId: defect.projectId,
         name: defect.name,
-        module: defect.module,
-        defectType: defect.defectType,
+        type: defect.type,
         description: defect.description,
-        assignedTo: defect.assignedTo || '__unassigned__',
+        assignedTo: defect.assignedTo || '',
         severity: defect.severity,
-        flags: defect.flags,
+        priority: defect.priority,
         status: defect.status,
       })
       setScreenshot(defect.screenshot || null)
@@ -216,7 +254,7 @@ export function EditDefectDialog({
         >
           <div className="pr-4 max-h-[calc(90vh-180px)] overflow-y-auto">
             <FieldGroup className="gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <form.Field
                   name="projectId"
                   children={(field) => {
@@ -277,32 +315,6 @@ export function EditDefectDialog({
                     )
                   }}
                 />
-                <form.Field
-                  name="module"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Module</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          placeholder="Enter module name"
-                          className="w-full"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          disabled={isSubmitting}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
               </div>
               <form.Field
                 name="description"
@@ -333,19 +345,17 @@ export function EditDefectDialog({
               />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <form.Field
-                  name="defectType"
+                  name="type"
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                          Defect Type
-                        </FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Type</FieldLabel>
                         <Select
-                          value={field.state.value}
+                          value={field.state.value || undefined}
                           onValueChange={(value) =>
-                            field.handleChange(value as 'bug' | 'improvement')
+                            field.handleChange(value as DefectType)
                           }
                         >
                           <SelectTrigger
@@ -356,10 +366,18 @@ export function EditDefectDialog({
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="bug">Bug</SelectItem>
-                            <SelectItem value="improvement">
-                              Improvement
-                            </SelectItem>
+                            {DEFECT_TYPES.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type
+                                  .split(' ')
+                                  .map(
+                                    (word) =>
+                                      word.charAt(0).toUpperCase() +
+                                      word.slice(1),
+                                  )
+                                  .join(' ')}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         {isInvalid && (
@@ -374,38 +392,66 @@ export function EditDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
+                    const selectedUser = users?.find(
+                      (user) => user._id === field.state.value,
+                    )
+                    const displayValue =
+                      selectedUser?.name ||
+                      selectedUser?.email ||
+                      selectedUser?._id ||
+                      'Select user'
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>
                           Assigned To
                         </FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value)}
+                        <Popover
+                          open={assignedToOpen}
+                          onOpenChange={setAssignedToOpen}
                         >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue placeholder="Select user (optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__unassigned__">
-                              Unassigned
-                            </SelectItem>
-                            {users?.map((userItem) => (
-                              <SelectItem
-                                key={userItem._id}
-                                value={userItem._id}
-                              >
-                                {userItem.name ||
-                                  userItem.email ||
-                                  userItem._id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id={field.name}
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={assignedToOpen}
+                              className="w-full justify-between"
+                              aria-invalid={isInvalid}
+                              disabled={isSubmitting}
+                            >
+                              {displayValue}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search user..." />
+                              <CommandList>
+                                <CommandEmpty>No user found.</CommandEmpty>
+                                <CommandGroup>
+                                  {users?.map((userItem) => {
+                                    const userLabel =
+                                      userItem.name ||
+                                      userItem.email ||
+                                      userItem._id
+                                    return (
+                                      <CommandItem
+                                        key={userItem._id}
+                                        value={userLabel}
+                                        onSelect={() => {
+                                          field.handleChange(userItem._id)
+                                          setAssignedToOpen(false)
+                                        }}
+                                      >
+                                        {userLabel}
+                                      </CommandItem>
+                                    )
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}
@@ -422,15 +468,9 @@ export function EditDefectDialog({
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Severity</FieldLabel>
                         <Select
-                          value={field.state.value}
+                          value={field.state.value || undefined}
                           onValueChange={(value) =>
-                            field.handleChange(
-                              value as
-                                | 'cosmetic'
-                                | 'medium'
-                                | 'high'
-                                | 'critical',
-                            )
+                            field.handleChange(value as DefectSeverity)
                           }
                         >
                           <SelectTrigger
@@ -441,10 +481,12 @@ export function EditDefectDialog({
                             <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="critical">Critical</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="cosmetic">Cosmetic</SelectItem>
+                            {DEFECT_SEVERITIES.map((severity) => (
+                              <SelectItem key={severity} value={severity}>
+                                {severity.charAt(0).toUpperCase() +
+                                  severity.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         {isInvalid && (
@@ -455,102 +497,35 @@ export function EditDefectDialog({
                   }}
                 />
                 <form.Field
-                  name="flags"
+                  name="priority"
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const currentFlags = field.state.value
-                    const flagOptions = [
-                      {
-                        value: 'unit test failure',
-                        label: 'Unit Test Failure',
-                      },
-                      { value: 'content issue', label: 'Content Issue' },
-                    ] as const
-                    const displayText =
-                      currentFlags.length > 0
-                        ? `${currentFlags.length} selected`
-                        : 'Select flags'
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Flags</FieldLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              type="button"
-                              id={field.name}
-                              variant="outline"
-                              className="w-full justify-between"
-                              aria-invalid={isInvalid}
-                              disabled={isSubmitting}
-                              onBlur={field.handleBlur}
-                            >
-                              <span
-                                className={
-                                  currentFlags.length === 0
-                                    ? 'text-muted-foreground'
-                                    : ''
-                                }
-                              >
-                                {displayText}
-                              </span>
-                              <svg
-                                className="h-4 w-4 opacity-50"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-[200px] p-2"
-                            align="start"
+                        <FieldLabel htmlFor={field.name}>Priority</FieldLabel>
+                        <Select
+                          value={field.state.value || undefined}
+                          onValueChange={(value) =>
+                            field.handleChange(value as DefectPriority)
+                          }
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            aria-invalid={isInvalid}
                           >
-                            <div className="space-y-2">
-                              {flagOptions.map((option) => (
-                                <div
-                                  key={option.value}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <Checkbox
-                                    id={`flag-${option.value}-edit`}
-                                    checked={currentFlags.includes(
-                                      option.value,
-                                    )}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        field.handleChange([
-                                          ...currentFlags,
-                                          option.value,
-                                        ])
-                                      } else {
-                                        field.handleChange(
-                                          currentFlags.filter(
-                                            (value) => value !== option.value,
-                                          ),
-                                        )
-                                      }
-                                    }}
-                                    disabled={isSubmitting}
-                                  />
-                                  <label
-                                    htmlFor={`flag-${option.value}-edit`}
-                                    className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                  >
-                                    {option.label}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DEFECT_PRIORITIES.map((priority) => (
+                              <SelectItem key={priority} value={priority}>
+                                {priority.charAt(0).toUpperCase() +
+                                  priority.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}
@@ -563,10 +538,7 @@ export function EditDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const statusOptions = getStatusOptionsForSelect(
-                      user.role as Role,
-                      field.state.value,
-                    )
+                    const statusOptions = getStatusOptionsForSelect()
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Status</FieldLabel>
@@ -590,18 +562,14 @@ export function EditDefectDialog({
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {statusOptions
-                              .filter((option) =>
-                                option.restrictTo.includes(user.role as Role),
-                              )
-                              .map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
+                            {statusOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         {isInvalid && (

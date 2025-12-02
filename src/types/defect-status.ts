@@ -1,62 +1,46 @@
-import type { Role } from 'convex/lib/permissions'
+import type { DefectStatus } from 'convex/lib/validators'
 
-export type DefectStatus =
-  | 'open'
-  | 'fixed'
-  | 'verified'
-  | 'reopened'
-  | 'deferred'
+// Re-export the type for convenience
+export type { DefectStatus }
 
 export interface DefectStatusOption {
   readonly value: DefectStatus
   readonly label: string
-  readonly restrictTo: ReadonlyArray<Role>
 }
 
 /**
- * Defect status options with role-based authorization.
- * Each status can only be set by users with the appropriate role.
+ * Defect status options.
  */
 export const DEFECT_STATUS_OPTIONS: ReadonlyArray<DefectStatusOption> = [
   {
     value: 'open',
     label: 'Open',
-    restrictTo: [],
+  },
+  {
+    value: 'in progress',
+    label: 'In Progress',
   },
   {
     value: 'fixed',
     label: 'Fixed',
-    restrictTo: ['manager', 'developer'],
   },
   {
     value: 'verified',
     label: 'Verified',
-    restrictTo: ['tester'],
   },
   {
     value: 'reopened',
     label: 'Reopened',
-    restrictTo: ['tester'],
   },
   {
     value: 'deferred',
     label: 'Deferred',
-    restrictTo: ['developer', 'manager'],
+  },
+  {
+    value: 'hold',
+    label: 'Hold',
   },
 ] as const
-
-/**
- * Get status options filtered by user role.
- * @param userRole - The role of the current user
- * @returns Array of status options the user is authorized to use
- */
-export function getAuthorizedStatusOptions(
-  userRole: Role,
-): ReadonlyArray<DefectStatusOption> {
-  return DEFECT_STATUS_OPTIONS.filter((option) =>
-    option.restrictTo.includes(userRole),
-  )
-}
 
 /**
  * Get a status option by value.
@@ -79,32 +63,9 @@ export function getStatusLabel(value: DefectStatus): string {
 }
 
 /**
- * Get status options for a Select component, ensuring the current status is included
- * for display purposes even if the user is not authorized to set it.
- * @param userRole - The role of the current user
- * @param currentStatus - The current status value to ensure is displayed
- * @returns Array of status options, with authorized options plus current status if needed
+ * Get all status options for a Select component.
+ * @returns Array of all status options
  */
-export function getStatusOptionsForSelect(
-  userRole: Role,
-  currentStatus: DefectStatus,
-): ReadonlyArray<DefectStatusOption> {
-  const authorizedOptions = getAuthorizedStatusOptions(userRole)
-  const currentStatusOption = getStatusOption(currentStatus)
-
-  // If current status is already in authorized options, return as is
-  if (authorizedOptions.some((opt) => opt.value === currentStatus)) {
-    return authorizedOptions
-  }
-
-  // If current status exists but is not authorized, include it for display
-  if (currentStatusOption) {
-    return [
-      ...authorizedOptions,
-      currentStatusOption,
-    ] as ReadonlyArray<DefectStatusOption>
-  }
-
-  // Fallback to authorized options only
-  return authorizedOptions
+export function getStatusOptionsForSelect(): ReadonlyArray<DefectStatusOption> {
+  return DEFECT_STATUS_OPTIONS
 }

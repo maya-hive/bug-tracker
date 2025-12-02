@@ -1,4 +1,5 @@
-import { RotateCcw } from 'lucide-react'
+import { ChevronsUpDown, RotateCcw } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -12,14 +13,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
-import { Checkbox } from '~/components/ui/checkbox'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '~/components/ui/command'
 
 export interface DashboardFilters {
   severity: string | null
   type: string | null
+  priority: string | null
   assignedTo: string | null
   reporter: string | null
-  flags: Array<string>
 }
 
 interface DashboardFiltersProps {
@@ -32,39 +40,47 @@ interface DashboardFiltersProps {
   onFiltersChange: (filters: DashboardFilters) => void
 }
 
-const flagOptions = [
-  { value: 'unit test failure', label: 'Unit Test Failure' },
-  { value: 'content issue', label: 'Content Issue' },
-] as const
-
 export function DashboardFilters({
   filters,
   users,
   onFiltersChange,
 }: DashboardFiltersProps) {
+  const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const [reporterOpen, setReporterOpen] = useState(false)
   const hasActiveFilters =
     filters.severity !== null ||
     filters.type !== null ||
+    filters.priority !== null ||
     filters.assignedTo !== null ||
-    filters.reporter !== null ||
-    filters.flags.length > 0
+    filters.reporter !== null
 
   const clearFilters = () => {
     onFiltersChange({
       severity: null,
       type: null,
+      priority: null,
       assignedTo: null,
       reporter: null,
-      flags: [],
     })
   }
 
-  const toggleFlag = (flag: string) => {
-    const newFlags = filters.flags.includes(flag)
-      ? filters.flags.filter((f) => f !== flag)
-      : [...filters.flags, flag]
-    onFiltersChange({ ...filters, flags: newFlags })
-  }
+  const selectedAssignedToUser = users?.find(
+    (user) => user._id === filters.assignedTo,
+  )
+  const assignedToDisplayValue =
+    filters.assignedTo === null
+      ? 'All Assignees'
+      : selectedAssignedToUser?.name ||
+        selectedAssignedToUser?.email ||
+        'Unknown'
+
+  const selectedReporterUser = users?.find(
+    (user) => user._id === filters.reporter,
+  )
+  const reporterDisplayValue =
+    filters.reporter === null
+      ? 'All Reporters'
+      : selectedReporterUser?.name || selectedReporterUser?.email || 'Unknown'
 
   return (
     <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
@@ -113,113 +129,141 @@ export function DashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="bug">Bug</SelectItem>
-          <SelectItem value="improvement">Improvement</SelectItem>
+          <SelectItem value="functional">Functional</SelectItem>
+          <SelectItem value="ui and usability">UI and Usability</SelectItem>
+          <SelectItem value="content">Content</SelectItem>
+          <SelectItem value="improvement request">
+            Improvement Request
+          </SelectItem>
+          <SelectItem value="unit test failure">Unit Test Failure</SelectItem>
         </SelectContent>
       </Select>
 
       <Select
-        value={filters.assignedTo || 'all'}
+        value={filters.priority || 'all'}
         onValueChange={(value) =>
           onFiltersChange({
             ...filters,
-            assignedTo: value === 'all' ? null : value,
+            priority: value === 'all' ? null : value,
           })
         }
       >
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Assigned To" />
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Priority" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Assignees</SelectItem>
-          <SelectItem value="unassigned">Unassigned</SelectItem>
-          {users?.map((user) => (
-            <SelectItem key={user._id} value={user._id}>
-              {user.name || user.email || 'Unknown'}
-            </SelectItem>
-          ))}
+          <SelectItem value="all">All Priorities</SelectItem>
+          <SelectItem value="low">Low</SelectItem>
+          <SelectItem value="medium">Medium</SelectItem>
+          <SelectItem value="high">High</SelectItem>
         </SelectContent>
       </Select>
 
-      <Select
-        value={filters.reporter || 'all'}
-        onValueChange={(value) =>
-          onFiltersChange({
-            ...filters,
-            reporter: value === 'all' ? null : value,
-          })
-        }
-      >
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Reporter" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Reporters</SelectItem>
-          {users?.map((user) => (
-            <SelectItem key={user._id} value={user._id}>
-              {user.name || user.email || 'Unknown'}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Popover>
+      <Popover open={assignedToOpen} onOpenChange={setAssignedToOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[140px] justify-between">
-            <span
-              className={
-                filters.flags.length === 0 ? 'text-muted-foreground' : ''
-              }
-            >
-              {filters.flags.length === 0
-                ? 'Flags'
-                : `${filters.flags.length} selected`}
-            </span>
-            <svg
-              className="h-4 w-4 opacity-50"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={assignedToOpen}
+            className="w-[160px] justify-between"
+          >
+            {assignedToDisplayValue}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-2" align="start">
-          <div className="space-y-2">
-            {flagOptions.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`flag-${option.value}`}
-                  checked={filters.flags.includes(option.value)}
-                  onCheckedChange={() => toggleFlag(option.value)}
-                />
-                <label
-                  htmlFor={`flag-${option.value}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+        <PopoverContent className="w-[160px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search user..." />
+            <CommandList>
+              <CommandEmpty>No user found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    onFiltersChange({
+                      ...filters,
+                      assignedTo: null,
+                    })
+                    setAssignedToOpen(false)
+                  }}
                 >
-                  {option.label}
-                </label>
-              </div>
-            ))}
-            {filters.flags.length > 0 && (
-              <div className="pt-2 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start h-8"
-                  onClick={() => onFiltersChange({ ...filters, flags: [] })}
+                  All Assignees
+                </CommandItem>
+                {users?.map((user) => {
+                  const userLabel = user.name || user.email || 'Unknown'
+                  return (
+                    <CommandItem
+                      key={user._id}
+                      value={userLabel}
+                      onSelect={() => {
+                        onFiltersChange({
+                          ...filters,
+                          assignedTo: user._id,
+                        })
+                        setAssignedToOpen(false)
+                      }}
+                    >
+                      {userLabel}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Popover open={reporterOpen} onOpenChange={setReporterOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={reporterOpen}
+            className="w-[160px] justify-between"
+          >
+            {reporterDisplayValue}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[160px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search user..." />
+            <CommandList>
+              <CommandEmpty>No user found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    onFiltersChange({
+                      ...filters,
+                      reporter: null,
+                    })
+                    setReporterOpen(false)
+                  }}
                 >
-                  Clear Flags
-                </Button>
-              </div>
-            )}
-          </div>
+                  All Reporters
+                </CommandItem>
+                {users?.map((user) => {
+                  const userLabel = user.name || user.email || 'Unknown'
+                  return (
+                    <CommandItem
+                      key={user._id}
+                      value={userLabel}
+                      onSelect={() => {
+                        onFiltersChange({
+                          ...filters,
+                          reporter: user._id,
+                        })
+                        setReporterOpen(false)
+                      }}
+                    >
+                      {userLabel}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </PopoverContent>
       </Popover>
     </div>
