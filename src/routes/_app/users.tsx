@@ -87,9 +87,9 @@ function Users() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Users</h1>
+            <h1 className="text-xl font-semibold">Users</h1>
             <p className="text-muted-foreground">
-              Manage users and their permissions
+              Manage users and assign roles.
             </p>
           </div>
           <Button onClick={() => setCreateUserOpen(true)}>

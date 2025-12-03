@@ -1,6 +1,15 @@
+import {
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Loader2,
+  PauseCircle,
+  RefreshCw,
+  ShieldCheck,
+} from 'lucide-react'
 import type { DefectStatus } from 'convex/lib/validators'
+import type { LucideIcon } from 'lucide-react'
 
-// Re-export the type for convenience
 export type { DefectStatus }
 
 export interface DefectStatusOption {
@@ -8,9 +17,6 @@ export interface DefectStatusOption {
   readonly label: string
 }
 
-/**
- * Defect status options.
- */
 export const DEFECT_STATUS_OPTIONS: ReadonlyArray<DefectStatusOption> = [
   {
     value: 'open',
@@ -42,30 +48,58 @@ export const DEFECT_STATUS_OPTIONS: ReadonlyArray<DefectStatusOption> = [
   },
 ] as const
 
-/**
- * Get a status option by value.
- * @param value - The status value to find
- * @returns The status option or undefined if not found
- */
 export function getStatusOption(
   value: DefectStatus,
 ): DefectStatusOption | undefined {
   return DEFECT_STATUS_OPTIONS.find((option) => option.value === value)
 }
 
-/**
- * Get the label for a status value.
- * @param value - The status value
- * @returns The label for the status, or the value itself if not found
- */
 export function getStatusLabel(value: DefectStatus): string {
   return getStatusOption(value)?.label ?? value
 }
 
-/**
- * Get all status options for a Select component.
- * @returns Array of all status options
- */
 export function getStatusOptionsForSelect(): ReadonlyArray<DefectStatusOption> {
   return DEFECT_STATUS_OPTIONS
+}
+
+export function getStatusIcon(status: DefectStatus): LucideIcon {
+  switch (status) {
+    case 'open':
+      return Circle
+    case 'in progress':
+      return Loader2
+    case 'fixed':
+      return CheckCircle2
+    case 'verified':
+      return ShieldCheck
+    case 'reopened':
+      return RefreshCw
+    case 'deferred':
+      return Calendar
+    case 'hold':
+      return PauseCircle
+    default:
+      return Circle
+  }
+}
+
+export function getStatusIconColor(status: DefectStatus): string {
+  switch (status) {
+    case 'open':
+      return 'text-gray-600 dark:text-gray-500'
+    case 'in progress':
+      return 'text-yellow-600 dark:text-yellow-500'
+    case 'fixed':
+      return 'text-blue-600 dark:text-blue-500'
+    case 'verified':
+      return 'text-green-600 dark:text-green-500'
+    case 'reopened':
+      return 'text-orange-600 dark:text-orange-500'
+    case 'deferred':
+      return 'text-gray-600 dark:text-gray-400'
+    case 'hold':
+      return 'text-red-600 dark:text-red-500'
+    default:
+      return 'text-muted-foreground'
+  }
 }

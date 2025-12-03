@@ -1,5 +1,6 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+import type { DefectStatus } from 'convex/lib/validators'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -24,13 +25,21 @@ import {
 import {
   DEFECT_PRIORITIES,
   DEFECT_SEVERITIES,
+  DEFECT_STATUSES,
   DEFECT_TYPES,
 } from '~/lib/defect-constants'
+import {
+  getStatusIcon,
+  getStatusIconColor,
+  getStatusLabel,
+} from '~/types/defect-status'
+import { cn } from '~/lib/utils'
 
 export interface DefectsFilters {
   severity: string | null
   type: string | null
   priority: string | null
+  status: string | null
   assignedTo: string | null
 }
 
@@ -54,6 +63,7 @@ export function DefectsFilters({
     filters.severity !== null ||
     filters.type !== null ||
     filters.priority !== null ||
+    filters.status !== null ||
     filters.assignedTo !== null
 
   const clearFilters = () => {
@@ -61,6 +71,7 @@ export function DefectsFilters({
       severity: null,
       type: null,
       priority: null,
+      status: null,
       assignedTo: null,
     })
   }
@@ -153,6 +164,56 @@ export function DefectsFilters({
               {priority.charAt(0).toUpperCase() + priority.slice(1)}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.status || 'all'}
+        onValueChange={(value) =>
+          onFiltersChange({
+            ...filters,
+            status: value === 'all' ? null : value,
+          })
+        }
+      >
+        <SelectTrigger className="w-[140px]">
+          <div className="flex items-center gap-2">
+            {filters.status ? (
+              <>
+                {(() => {
+                  const StatusIcon = getStatusIcon(
+                    filters.status as DefectStatus,
+                  )
+                  const statusIconColor = getStatusIconColor(
+                    filters.status as DefectStatus,
+                  )
+                  return (
+                    <StatusIcon className={cn('size-4', statusIconColor)} />
+                  )
+                })()}
+                <SelectValue>
+                  {getStatusLabel(filters.status as DefectStatus)}
+                </SelectValue>
+              </>
+            ) : (
+              <SelectValue placeholder="Status" />
+            )}
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          {DEFECT_STATUSES.map((status) => {
+            const StatusIcon = getStatusIcon(status)
+            const statusIconColor = getStatusIconColor(status)
+            return (
+              <SelectItem key={status} value={status}>
+                <div className="flex items-center gap-2">
+                  <StatusIcon className={cn('size-4', statusIconColor)} />
+                  <span>{getStatusLabel(status)}</span>
+                </div>
+              </SelectItem>
+            )
+          })}
         </SelectContent>
       </Select>
 

@@ -36,6 +36,8 @@ import { cn } from '~/lib/utils'
 import { ImageZoom } from '~/components/ui/image-zoom'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
+  getStatusIcon,
+  getStatusIconColor,
   getStatusLabel,
   getStatusOptionsForSelect,
 } from '~/types/defect-status'
@@ -95,11 +97,14 @@ export function DefectCard({
   const comments = defect.comments || []
   const commentsCount = comments.length
 
+  const StatusIcon = getStatusIcon(defect.status)
+  const statusIconColor = getStatusIconColor(defect.status)
+
   return (
     <>
       <Card className="flex flex-col h-full gap-2">
         <CardHeader className="pb-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-1.5">
               <CardTitle className="text-lg font-semibold leading-tight line-clamp-2">
                 {defect.name}
@@ -111,14 +116,24 @@ export function DefectCard({
               disabled={statusUpdating}
             >
               <SelectTrigger>
-                <SelectValue>{getStatusLabel(defect.status)}</SelectValue>
+                <div className="flex items-center gap-2">
+                  <StatusIcon className={cn('size-4', statusIconColor)} />
+                  <SelectValue>{getStatusLabel(defect.status)}</SelectValue>
+                </div>
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                {statusOptions.map((option) => {
+                  const OptionIcon = getStatusIcon(option.value)
+                  const optionIconColor = getStatusIconColor(option.value)
+                  return (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <OptionIcon className={cn('size-4', optionIconColor)} />
+                        <span>{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -194,7 +209,7 @@ export function DefectCard({
                 )}
               >
                 <img
-                  className="h-56 w-full rounded-sm"
+                  className="h-56 w-full rounded-sm object-cover"
                   src={imageUrl}
                   loading="lazy"
                 />

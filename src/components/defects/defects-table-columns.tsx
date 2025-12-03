@@ -18,9 +18,12 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import {
+  getStatusIcon,
+  getStatusIconColor,
   getStatusLabel,
   getStatusOptionsForSelect,
 } from '~/types/defect-status'
+import { cn } from '~/lib/utils'
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
@@ -51,6 +54,9 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
   const updateDefect = useMutation(api.defects.updateDefect)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
+  const StatusIcon = getStatusIcon(currentStatus)
+  const statusIconColor = getStatusIconColor(currentStatus)
+
   const handleStatusChange = async (newStatus: string) => {
     setStatusUpdating(true)
     try {
@@ -74,24 +80,44 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
       disabled={statusUpdating}
     >
       <SelectTrigger className="w-fit" size="sm">
-        <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
+        <div className="flex items-center gap-2">
+          <StatusIcon
+            className={cn('size-4', statusIconColor)}
+          />
+          <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
+        </div>
       </SelectTrigger>
       <SelectContent>
-        {statusOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+        {statusOptions.map((option) => {
+          const OptionIcon = getStatusIcon(option.value)
+          const optionIconColor = getStatusIconColor(option.value)
+          return (
+            <SelectItem key={option.value} value={option.value}>
+              <div className="flex items-center gap-2">
+                <OptionIcon
+                  className={cn('size-4', optionIconColor)}
+                />
+                <span>{option.label}</span>
+              </div>
+            </SelectItem>
+          )
+        })}
       </SelectContent>
     </Select>
   )
 }
 
 function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
-  const statusLabel = getStatusLabel(row.original.status)
+  const status = row.original.status
+  const statusLabel = getStatusLabel(status)
+  const StatusIcon = getStatusIcon(status)
+  const statusIconColor = getStatusIconColor(status)
 
   return (
-    <Badge variant="outline" className="text-sm">
+    <Badge variant="outline" className="text-sm gap-1.5">
+      <StatusIcon
+        className={cn('size-3.5', statusIconColor)}
+      />
       {statusLabel}
     </Badge>
   )

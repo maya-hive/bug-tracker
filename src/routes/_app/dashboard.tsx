@@ -117,10 +117,7 @@ function Dashboard() {
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="shrink-0">
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Overview of all bugs and unit test failures
-            </p>
+            <h1 className="text-xl font-semibold">Dashboard</h1>
           </div>
           <DashboardFilters
             filters={filters}

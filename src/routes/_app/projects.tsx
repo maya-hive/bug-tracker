@@ -93,8 +93,10 @@ function Projects() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Projects</h1>
-            <p className="text-muted-foreground">Manage projects</p>
+            <h1 className="text-xl font-semibold">Projects</h1>
+            <p className="text-muted-foreground">
+              Manage projects to track defects.
+            </p>
           </div>
           <Button onClick={() => setCreateProjectOpen(true)}>
             <CirclePlus className="size-4" />

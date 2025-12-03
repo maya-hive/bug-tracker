@@ -1,6 +1,37 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 
+export const getProject = query({
+  args: {
+    projectId: v.union(v.id('projects'), v.null()),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id('projects'),
+      _creationTime: v.number(),
+      name: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
+    if (!args.projectId) {
+      return null
+    }
+
+    const project = await ctx.db.get(args.projectId)
+
+    if (!project) {
+      throw new Error('Project not found')
+    }
+
+    return project
+  },
+})
+
 /**
  * List all projects
  */

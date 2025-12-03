@@ -6,6 +6,7 @@ import type { FileRouteTypes } from '~/routeTree.gen'
 import type { Role } from 'convex/lib/permissions'
 import { Button } from '~/components/ui/button'
 import { useAuthUser } from '~/contexts/use-auth-user'
+import { cn } from '~/lib/utils'
 
 export interface NavMenuItem {
   readonly icon: LucideIcon
@@ -57,7 +58,15 @@ export function NavMenu() {
       {authorizedItems.map((item) => {
         const Icon = item.icon
         return (
-          <Button key={item.to} variant="ghost" className="shadow-none" asChild>
+          <Button
+            key={item.to}
+            variant="ghost"
+            className={cn(
+              'shadow-none',
+              location.pathname === item.to && 'bg-accent',
+            )}
+            asChild
+          >
             <Link to={item.to} search={currentSearch}>
               <Icon className="size-4" />
               {item.label}

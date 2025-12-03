@@ -58,10 +58,15 @@ function Defects() {
     return 'cards'
   })
 
+  const project = useQuery(api.projects.getProject, {
+    projectId: projectId as Id<'projects'>,
+  })
+
   const [filters, setFilters] = useState<DefectsFiltersType>({
     severity: null,
     type: null,
     priority: null,
+    status: null,
     assignedTo: null,
   })
 
@@ -140,6 +145,10 @@ function Defects() {
           return false
         }
 
+        if (filters.status !== null && defect.status !== filters.status) {
+          return false
+        }
+
         if (filters.assignedTo !== null) {
           if (defect.assignedTo !== filters.assignedTo) {
             return false
@@ -168,10 +177,9 @@ function Defects() {
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="shrink-0">
-            <h1 className="text-2xl font-semibold">Defects</h1>
-            <p className="text-muted-foreground">
-              Manage defects assigned to the project
-            </p>
+            <h1 className="text-xl font-semibold">
+              {project?.name ? `${project.name}` : 'All Defects'}
+            </h1>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <DefectsFilters
