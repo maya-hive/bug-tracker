@@ -13,11 +13,12 @@ import {
   UserRoundPen,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { ImageLightbox } from './image-lightbox'
+import { DEFECT_SEVERITIES } from 'convex/defects'
+import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
-import type { DefectStatus } from 'convex/lib/validators'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { ImageLightbox } from '~/components/ui/image-lightbox'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -40,15 +41,7 @@ import {
   getStatusIconColor,
   getStatusLabel,
   getStatusOptionsForSelect,
-} from '~/types/defect-status'
-
-const severityColors = {
-  blocker: 'destructive',
-  critical: 'destructive',
-  major: 'destructive',
-  medium: 'default',
-  minor: 'secondary',
-} as const
+} from '~/components/defects/defect-status'
 
 export function DefectCard({
   defect,
@@ -104,9 +97,9 @@ export function DefectCard({
     <>
       <Card className="flex flex-col h-full gap-2">
         <CardHeader className="pb-4 space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-1.5">
-              <CardTitle className="text-lg font-semibold leading-tight line-clamp-2">
+              <CardTitle className="text-md font-semibold leading-tight line-clamp-2">
                 {defect.name}
               </CardTitle>
             </div>
@@ -144,7 +137,10 @@ export function DefectCard({
               {defect.type}
             </Badge>
             <Badge
-              variant={severityColors[defect.severity]}
+              variant={
+                DEFECT_SEVERITIES.find((s) => s.value === defect.severity)
+                  ?.color
+              }
               className="gap-1.5"
             >
               <Activity className="size-3" />

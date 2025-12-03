@@ -4,6 +4,8 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus, LayoutGrid, Table } from 'lucide-react'
+import { VALID_ROLES } from 'convex/lib/permissions'
+import type { Role } from 'convex/lib/permissions'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectsFilters as DefectsFiltersType } from '~/components/defects/defects-filters'
@@ -26,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { useAuthUser } from '~/contexts/use-auth-user'
 
 export const Route = createFileRoute('/_app/defects')({
   component: Defects,
@@ -34,6 +37,7 @@ export const Route = createFileRoute('/_app/defects')({
 const DEFECTS_VIEW_MODE_KEY = 'defects-view-mode'
 
 function Defects() {
+  const authUser = useAuthUser()
   const defects = useQuery(api.defects.listDefects)
   const users = useQuery(api.users.listUsers)
   const [projectId] = useProject()
@@ -204,10 +208,17 @@ function Defects() {
                 <Table className="size-4" />
               </ToggleGroupItem>
             </ToggleGroup>
-            <Button onClick={() => setCreateDefectOpen(true)}>
-              <CirclePlus className="size-4" />
-              Create New Defect
-            </Button>
+            {!([VALID_ROLES.TESTER] as ReadonlyArray<Role>).includes(
+              authUser.role,
+            ) && (
+              <Button
+                onClick={() => setCreateDefectOpen(true)}
+                disabled={projectId === null}
+              >
+                <CirclePlus className="size-4" />
+                Create New Defect
+              </Button>
+            )}
           </div>
         </div>
       </div>

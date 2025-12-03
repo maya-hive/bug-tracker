@@ -64,7 +64,7 @@ export function DefectsTable({
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 32,
   })
 
   const table = useReactTable({

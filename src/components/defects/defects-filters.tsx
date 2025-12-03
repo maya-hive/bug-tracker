@@ -1,6 +1,12 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import type { DefectStatus } from 'convex/lib/validators'
+import {
+  DEFECT_PRIORITIES,
+  DEFECT_SEVERITIES,
+  DEFECT_STATUSES,
+  DEFECT_TYPES,
+} from 'convex/defects'
+import type { DefectStatus } from 'convex/defects'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -23,16 +29,10 @@ import {
   CommandList,
 } from '~/components/ui/command'
 import {
-  DEFECT_PRIORITIES,
-  DEFECT_SEVERITIES,
-  DEFECT_STATUSES,
-  DEFECT_TYPES,
-} from '~/lib/defect-constants'
-import {
   getStatusIcon,
   getStatusIconColor,
   getStatusLabel,
-} from '~/types/defect-status'
+} from '~/components/defects/defect-status'
 import { cn } from '~/lib/utils'
 
 export interface DefectsFilters {
@@ -113,8 +113,8 @@ export function DefectsFilters({
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
           {DEFECT_SEVERITIES.map((severity) => (
-            <SelectItem key={severity} value={severity}>
-              {severity.charAt(0).toUpperCase() + severity.slice(1)}
+            <SelectItem key={severity.value} value={severity.value}>
+              {severity.label}
             </SelectItem>
           ))}
         </SelectContent>
@@ -135,11 +135,8 @@ export function DefectsFilters({
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
           {DEFECT_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type
-                .split(' ')
-                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ')}
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
             </SelectItem>
           ))}
         </SelectContent>
@@ -160,8 +157,8 @@ export function DefectsFilters({
         <SelectContent>
           <SelectItem value="all">All Priorities</SelectItem>
           {DEFECT_PRIORITIES.map((priority) => (
-            <SelectItem key={priority} value={priority}>
-              {priority.charAt(0).toUpperCase() + priority.slice(1)}
+            <SelectItem key={priority.value} value={priority.value}>
+              {priority.label}
             </SelectItem>
           ))}
         </SelectContent>
@@ -203,13 +200,13 @@ export function DefectsFilters({
         <SelectContent>
           <SelectItem value="all">All Statuses</SelectItem>
           {DEFECT_STATUSES.map((status) => {
-            const StatusIcon = getStatusIcon(status)
-            const statusIconColor = getStatusIconColor(status)
+            const StatusIcon = getStatusIcon(status.value)
+            const statusIconColor = getStatusIconColor(status.value)
             return (
-              <SelectItem key={status} value={status}>
+              <SelectItem key={status.value} value={status.value}>
                 <div className="flex items-center gap-2">
                   <StatusIcon className={cn('size-4', statusIconColor)} />
-                  <span>{getStatusLabel(status)}</span>
+                  <span>{status.label}</span>
                 </div>
               </SelectItem>
             )

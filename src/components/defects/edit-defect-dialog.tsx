@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { z } from 'zod'
 import { ChevronsUpDown } from 'lucide-react'
 
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import type { Id } from 'convex/_generated/dataModel'
-import type { DefectTableItem } from './defects-table.types'
+import {
+  DEFECT_PRIORITIES,
+  DEFECT_SEVERITIES,
+  DEFECT_TYPES,
+} from 'convex/defects'
 import type {
   DefectPriority,
   DefectSeverity,
   DefectStatus,
   DefectType,
-} from 'convex/lib/validators'
-import {
-  DEFECT_PRIORITIES,
-  DEFECT_SEVERITIES,
-  DEFECT_TYPES,
-} from '~/lib/defect-constants'
+} from 'convex/defects'
+import type { Id } from 'convex/_generated/dataModel'
+import type { DefectTableItem } from './defects-table.types'
+import { defectFormSchema } from '~/components/defects/defect-form.types'
 import {
   Dialog,
   DialogContent,
@@ -57,50 +57,6 @@ import {
   CommandList,
 } from '~/components/ui/command'
 import { ImageDropzone } from '~/components/ui/image-dropzone'
-import {
-  getStatusLabel,
-  getStatusOptionsForSelect,
-} from '~/types/defect-status'
-
-const editDefectSchema = z.object({
-  projectId: z.string().min(1, 'Project is required'),
-  name: z.string().min(1, 'Name is required'),
-  type: z
-    .union([
-      z.literal(''),
-      z.enum([
-        'functional',
-        'ui and usability',
-        'content',
-        'improvement request',
-        'unit test failure',
-      ]),
-    ])
-    .refine((val) => val !== '', 'Type is required')
-    .transform((val) => val as Exclude<typeof val, ''>),
-  description: z.string().min(1, 'Description is required'),
-  assignedTo: z.string().min(1, 'Assigned To is required'),
-  severity: z
-    .union([
-      z.literal(''),
-      z.enum(['minor', 'medium', 'major', 'critical', 'blocker']),
-    ])
-    .refine((val) => val !== '', 'Severity is required')
-    .transform((val) => val as Exclude<typeof val, ''>),
-  priority: z
-    .union([z.literal(''), z.enum(['low', 'medium', 'high'])])
-    .refine((val) => val !== '', 'Priority is required')
-    .transform((val) => val as Exclude<typeof val, ''>),
-  status: z.enum([
-    'open',
-    'in progress',
-    'fixed',
-    'verified',
-    'reopened',
-    'deferred',
-    'hold',
-  ] as const),
-})
 
 export function EditDefectDialog({
   defect,
@@ -113,7 +69,6 @@ export function EditDefectDialog({
 }) {
   const updateDefect = useMutation(api.defects.updateDefect)
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
-  const projects = useQuery(api.projects.listProjects)
   const users = useQuery(api.users.listUsers)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
@@ -130,33 +85,35 @@ export function EditDefectDialog({
 
   const form = useForm({
     defaultValues: {
-      projectId: defect?.projectId || '',
+      projectId: (defect?.projectId || '') as string,
       name: defect?.name || '',
-      type: defect?.type || '',
+      type: (defect?.type || '') as string,
       description: defect?.description || '',
-      assignedTo: defect?.assignedTo || '',
-      severity: defect?.severity || '',
-      priority: defect?.priority || '',
-      status: defect?.status || 'open',
+      assignedTo: (defect?.assignedTo || '') as string,
+      severity: (defect?.severity || '') as string,
+      priority: (defect?.priority || '') as string,
+      status: (defect?.status || 'open') as string,
     },
     validators: {
-      onSubmit: editDefectSchema,
+      onSubmit: defectFormSchema,
     },
     onSubmit: async ({ value }) => {
       if (!defect) return
 
       setIsSubmitting(true)
       try {
+        // Validate the form values (zod ensures they're valid enum strings)
+        const validated = defectFormSchema.parse(value)
         await updateDefect({
           defectId: defect._id as Id<'defects'>,
-          projectId: value.projectId as Id<'projects'>,
-          name: value.name,
-          type: value.type as DefectType,
-          description: value.description,
-          assignedTo: value.assignedTo as Id<'users'>,
-          severity: value.severity as DefectSeverity,
-          priority: value.priority as DefectPriority,
-          status: value.status as DefectStatus,
+          projectId: validated.projectId as Id<'projects'>,
+          name: validated.name,
+          type: validated.type as DefectType,
+          description: validated.description,
+          assignedTo: validated.assignedTo as Id<'users'>,
+          severity: validated.severity as DefectSeverity,
+          priority: validated.priority as DefectPriority,
+          status: validated.status as DefectStatus,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -176,15 +133,16 @@ export function EditDefectDialog({
   useEffect(() => {
     if (defect && open) {
       form.reset({
-        projectId: defect.projectId,
+        projectId: String(defect.projectId),
         name: defect.name,
-        type: defect.type,
+        type: String(defect.type),
         description: defect.description,
-        assignedTo: defect.assignedTo || '',
-        severity: defect.severity,
-        priority: defect.priority,
-        status: defect.status,
+        assignedTo: String(defect.assignedTo || ''),
+        severity: String(defect.severity),
+        priority: String(defect.priority),
+        status: String(defect.status),
       })
+
       setScreenshot(defect.screenshot || null)
       setSelectedFile(null)
     } else if (!open) {
@@ -254,68 +212,32 @@ export function EditDefectDialog({
         >
           <div className="pr-4 max-h-[calc(90vh-180px)] overflow-y-auto">
             <FieldGroup className="gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <form.Field
-                  name="projectId"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Project</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue placeholder="Select project" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {projects?.map((project) => (
-                              <SelectItem key={project._id} value={project._id}>
-                                {project.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-                <form.Field
-                  name="name"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          placeholder="Enter defect name"
-                          className="w-full"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          disabled={isSubmitting}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
+              <form.Field
+                name="name"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        placeholder="Enter defect name"
+                        className="w-full"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        disabled={isSubmitting}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
               <form.Field
                 name="description"
                 children={(field) => {
@@ -353,10 +275,8 @@ export function EditDefectDialog({
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Type</FieldLabel>
                         <Select
-                          value={field.state.value || undefined}
-                          onValueChange={(value) =>
-                            field.handleChange(value as DefectType)
-                          }
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value)}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -367,15 +287,8 @@ export function EditDefectDialog({
                           </SelectTrigger>
                           <SelectContent>
                             {DEFECT_TYPES.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type
-                                  .split(' ')
-                                  .map(
-                                    (word) =>
-                                      word.charAt(0).toUpperCase() +
-                                      word.slice(1),
-                                  )
-                                  .join(' ')}
+                              <SelectItem key={type.id} value={type.value}>
+                                {type.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -468,10 +381,8 @@ export function EditDefectDialog({
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Severity</FieldLabel>
                         <Select
-                          value={field.state.value || undefined}
-                          onValueChange={(value) =>
-                            field.handleChange(value as DefectSeverity)
-                          }
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value)}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -482,9 +393,11 @@ export function EditDefectDialog({
                           </SelectTrigger>
                           <SelectContent>
                             {DEFECT_SEVERITIES.map((severity) => (
-                              <SelectItem key={severity} value={severity}>
-                                {severity.charAt(0).toUpperCase() +
-                                  severity.slice(1)}
+                              <SelectItem
+                                key={severity.id}
+                                value={severity.value}
+                              >
+                                {severity.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -505,10 +418,8 @@ export function EditDefectDialog({
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Priority</FieldLabel>
                         <Select
-                          value={field.state.value || undefined}
-                          onValueChange={(value) =>
-                            field.handleChange(value as DefectPriority)
-                          }
+                          value={field.state.value}
+                          onValueChange={(value) => field.handleChange(value)}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -519,55 +430,11 @@ export function EditDefectDialog({
                           </SelectTrigger>
                           <SelectContent>
                             {DEFECT_PRIORITIES.map((priority) => (
-                              <SelectItem key={priority} value={priority}>
-                                {priority.charAt(0).toUpperCase() +
-                                  priority.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-                <form.Field
-                  name="status"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    const statusOptions = getStatusOptionsForSelect()
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Status</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(
-                              value as z.infer<
-                                typeof editDefectSchema
-                              >['status'],
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue>
-                              {getStatusLabel(field.state.value)}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusOptions.map((option) => (
                               <SelectItem
-                                key={option.value}
-                                value={option.value}
+                                key={priority.id}
+                                value={priority.value}
                               >
-                                {option.label}
+                                {priority.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
