@@ -1,5 +1,6 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -105,10 +106,11 @@ export function DashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
-          <SelectItem value="cosmetic">Cosmetic</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="high">High</SelectItem>
-          <SelectItem value="critical">Critical</SelectItem>
+          {DEFECT_SEVERITIES.map((severity) => (
+            <SelectItem key={severity.value} value={severity.value}>
+              {severity.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -126,13 +128,11 @@ export function DashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="functional">Functional</SelectItem>
-          <SelectItem value="ui and usability">UI and Usability</SelectItem>
-          <SelectItem value="content">Content</SelectItem>
-          <SelectItem value="improvement request">
-            Improvement Request
-          </SelectItem>
-          <SelectItem value="unit test failure">Unit Test Failure</SelectItem>
+          {DEFECT_TYPES.map((type) => (
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
