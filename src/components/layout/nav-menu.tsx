@@ -53,18 +53,24 @@ export function NavMenu() {
     return (item.restrictTo as ReadonlyArray<Role>).includes(userRole)
   })
 
+  const normalizePath = (path: string) => {
+    const withoutQuery = path.split('?')[0]
+    return withoutQuery === '/' ? withoutQuery : withoutQuery.replace(/\/$/, '')
+  }
+  const currentPathname = normalizePath(location.pathname)
+
   return (
     <div className="flex items-center gap-2 shrink-0">
       {authorizedItems.map((item) => {
         const Icon = item.icon
+        const itemPathname = normalizePath(item.to)
+        const isActive = currentPathname === itemPathname
+
         return (
           <Button
             key={item.to}
             variant="ghost"
-            className={cn(
-              'shadow-none',
-              location.pathname === item.to && 'bg-accent',
-            )}
+            className={cn('shadow-none', isActive && 'bg-accent')}
             asChild
           >
             <Link to={item.to} search={currentSearch}>

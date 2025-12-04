@@ -32,9 +32,6 @@ export const getProject = query({
   },
 })
 
-/**
- * List all projects
- */
 export const listProjects = query({
   args: {},
   returns: v.array(
@@ -58,9 +55,6 @@ export const listProjects = query({
   },
 })
 
-/**
- * Create a new project
- */
 export const createProject = mutation({
   args: {
     name: v.string(),
@@ -77,9 +71,6 @@ export const createProject = mutation({
   },
 })
 
-/**
- * Update project
- */
 export const updateProject = mutation({
   args: {
     projectId: v.id('projects'),
@@ -109,9 +100,6 @@ export const updateProject = mutation({
   },
 })
 
-/**
- * Delete project
- */
 export const deleteProject = mutation({
   args: {
     projectId: v.id('projects'),

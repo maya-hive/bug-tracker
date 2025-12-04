@@ -6,7 +6,7 @@ import {
   defectSeverityValidator,
   defectStatusValidator,
   defectTypeValidator,
-} from './lib/validators'
+} from './defects'
 
 export default defineSchema({
   ...authTables,

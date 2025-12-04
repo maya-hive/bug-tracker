@@ -7,7 +7,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from 'lucide-react'
-import type { DefectStatus } from 'convex/lib/validators'
+import type { DefectStatus } from 'convex/defects'
 import type { LucideIcon } from 'lucide-react'
 
 export type { DefectStatus }
@@ -54,8 +54,8 @@ export function getStatusOption(
   return DEFECT_STATUS_OPTIONS.find((option) => option.value === value)
 }
 
-export function getStatusLabel(value: DefectStatus): string {
-  return getStatusOption(value)?.label ?? value
+export function getStatusLabel(value: DefectStatus | string): string {
+  return getStatusOption(value as DefectStatus)?.label ?? value
 }
 
 export function getStatusOptionsForSelect(): ReadonlyArray<DefectStatusOption> {

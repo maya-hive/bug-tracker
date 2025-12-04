@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
+import { DEFECT_PRIORITIES, DEFECT_SEVERITIES } from 'convex/defects'
+import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from 'convex/_generated/dataModel'
-import type { DefectSeverity, DefectStatus } from 'convex/lib/validators'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -22,7 +23,7 @@ import {
   getStatusIconColor,
   getStatusLabel,
   getStatusOptionsForSelect,
-} from '~/types/defect-status'
+} from '~/components/defects/defect-status'
 import { cn } from '~/lib/utils'
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
@@ -30,20 +31,13 @@ function NameCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
-  const severityColors: Record<
-    DefectSeverity,
-    'destructive' | 'default' | 'secondary'
-  > = {
-    blocker: 'destructive',
-    critical: 'destructive',
-    major: 'destructive',
-    medium: 'default',
-    minor: 'secondary',
-  } as const
-
   return (
-    <Badge variant={severityColors[row.original.severity]}>
-      {row.original.severity}
+    <Badge
+      variant={
+        DEFECT_SEVERITIES.find((s) => s.value === row.original.severity)?.color
+      }
+    >
+      {DEFECT_SEVERITIES.find((s) => s.value === row.original.severity)?.label}
     </Badge>
   )
 }
@@ -81,9 +75,7 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
     >
       <SelectTrigger className="w-fit" size="sm">
         <div className="flex items-center gap-2">
-          <StatusIcon
-            className={cn('size-4', statusIconColor)}
-          />
+          <StatusIcon className={cn('size-4', statusIconColor)} />
           <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
         </div>
       </SelectTrigger>
@@ -94,9 +86,7 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
           return (
             <SelectItem key={option.value} value={option.value}>
               <div className="flex items-center gap-2">
-                <OptionIcon
-                  className={cn('size-4', optionIconColor)}
-                />
+                <OptionIcon className={cn('size-4', optionIconColor)} />
                 <span>{option.label}</span>
               </div>
             </SelectItem>
@@ -115,9 +105,7 @@ function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
 
   return (
     <Badge variant="outline" className="text-sm gap-1.5">
-      <StatusIcon
-        className={cn('size-3.5', statusIconColor)}
-      />
+      <StatusIcon className={cn('size-3.5', statusIconColor)} />
       {statusLabel}
     </Badge>
   )
@@ -132,15 +120,13 @@ function TypeCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function PriorityCell({ row }: { row: { original: DefectTableItem } }) {
-  const priorityColors = {
-    low: 'secondary',
-    medium: 'default',
-    high: 'destructive',
-  } as const
-
   return (
-    <Badge variant={priorityColors[row.original.priority]}>
-      {row.original.priority}
+    <Badge
+      variant={
+        DEFECT_PRIORITIES.find((p) => p.value === row.original.priority)?.color
+      }
+    >
+      {DEFECT_PRIORITIES.find((p) => p.value === row.original.priority)?.label}
     </Badge>
   )
 }

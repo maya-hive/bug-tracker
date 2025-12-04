@@ -1,5 +1,6 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -25,7 +26,6 @@ import {
 export interface DashboardFilters {
   severity: string | null
   type: string | null
-  priority: string | null
   assignedTo: string | null
   reporter: string | null
 }
@@ -50,7 +50,6 @@ export function DashboardFilters({
   const hasActiveFilters =
     filters.severity !== null ||
     filters.type !== null ||
-    filters.priority !== null ||
     filters.assignedTo !== null ||
     filters.reporter !== null
 
@@ -58,7 +57,6 @@ export function DashboardFilters({
     onFiltersChange({
       severity: null,
       type: null,
-      priority: null,
       assignedTo: null,
       reporter: null,
     })
@@ -108,10 +106,11 @@ export function DashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
-          <SelectItem value="cosmetic">Cosmetic</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="high">High</SelectItem>
-          <SelectItem value="critical">Critical</SelectItem>
+          {DEFECT_SEVERITIES.map((severity) => (
+            <SelectItem key={severity.value} value={severity.value}>
+              {severity.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
@@ -129,33 +128,11 @@ export function DashboardFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="functional">Functional</SelectItem>
-          <SelectItem value="ui and usability">UI and Usability</SelectItem>
-          <SelectItem value="content">Content</SelectItem>
-          <SelectItem value="improvement request">
-            Improvement Request
-          </SelectItem>
-          <SelectItem value="unit test failure">Unit Test Failure</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.priority || 'all'}
-        onValueChange={(value) =>
-          onFiltersChange({
-            ...filters,
-            priority: value === 'all' ? null : value,
-          })
-        }
-      >
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Priority" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Priorities</SelectItem>
-          <SelectItem value="low">Low</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="high">High</SelectItem>
+          {DEFECT_TYPES.map((type) => (
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

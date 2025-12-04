@@ -1,17 +1,61 @@
 import { getAuthUserId } from '@convex-dev/auth/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import {
-  defectPriorityValidator,
-  defectSeverityValidator,
-  defectStatusValidator,
-  defectTypeValidator,
-} from './lib/validators'
 import type { Doc } from './_generated/dataModel'
 
-/**
- * Generate an upload URL for file attachment
- */
+export const DEFECT_TYPES = [
+  { id: 1, label: 'Functional', value: 'functional' },
+  { id: 2, label: 'UI and Usability', value: 'ui and usability' },
+  { id: 3, label: 'Content', value: 'content' },
+  { id: 4, label: 'Improvement Request', value: 'improvement request' },
+  { id: 5, label: 'Unit Test Failure', value: 'unit test failure' },
+] as const
+
+export const DEFECT_SEVERITIES = [
+  { id: 1, label: 'Minor', value: 'minor', color: 'secondary' },
+  { id: 2, label: 'Medium', value: 'medium', color: 'default' },
+  { id: 3, label: 'Major', value: 'major', color: 'destructive' },
+  { id: 4, label: 'Critical', value: 'critical', color: 'destructive' },
+  { id: 5, label: 'Blocker', value: 'blocker', color: 'destructive' },
+] as const
+
+export const DEFECT_PRIORITIES = [
+  { id: 1, label: 'Low', value: 'low', color: 'secondary' },
+  { id: 2, label: 'Medium', value: 'medium', color: 'default' },
+  { id: 3, label: 'High', value: 'high', color: 'destructive' },
+] as const
+
+export const DEFECT_STATUSES = [
+  { id: 1, label: 'Open', value: 'open' },
+  { id: 2, label: 'In Progress', value: 'in progress' },
+  { id: 3, label: 'Fixed', value: 'fixed' },
+  { id: 4, label: 'Verified', value: 'verified' },
+  { id: 5, label: 'Reopened', value: 'reopened' },
+  { id: 6, label: 'Deferred', value: 'deferred' },
+  { id: 7, label: 'Hold', value: 'hold' },
+] as const
+
+export const defectTypeValidator = v.union(
+  ...DEFECT_TYPES.map(({ value }) => v.literal(value)),
+)
+
+export const defectSeverityValidator = v.union(
+  ...DEFECT_SEVERITIES.map(({ value }) => v.literal(value)),
+)
+
+export const defectPriorityValidator = v.union(
+  ...DEFECT_PRIORITIES.map(({ value }) => v.literal(value)),
+)
+
+export const defectStatusValidator = v.union(
+  ...DEFECT_STATUSES.map(({ value }) => v.literal(value)),
+)
+
+export type DefectType = (typeof DEFECT_TYPES)[number]['value']
+export type DefectSeverity = (typeof DEFECT_SEVERITIES)[number]['value']
+export type DefectPriority = (typeof DEFECT_PRIORITIES)[number]['value']
+export type DefectStatus = (typeof DEFECT_STATUSES)[number]['value']
+
 export const generateUploadUrl = mutation({
   args: {},
   returns: v.string(),
@@ -20,9 +64,6 @@ export const generateUploadUrl = mutation({
   },
 })
 
-/**
- * Get a file URL from storage ID
- */
 export const getFileUrl = query({
   args: {
     storageId: v.id('_storage'),
@@ -33,9 +74,6 @@ export const getFileUrl = query({
   },
 })
 
-/**
- * List all defects
- */
 export const listDefects = query({
   args: {},
   returns: v.array(
@@ -45,13 +83,13 @@ export const listDefects = query({
       projectId: v.id('projects'),
       projectName: v.string(),
       name: v.string(),
-      type: defectTypeValidator,
       description: v.string(),
       screenshot: v.optional(v.id('_storage')),
       assignedTo: v.optional(v.id('users')),
       assignedToName: v.optional(v.string()),
       reporterId: v.id('users'),
       reporterName: v.string(),
+      type: defectTypeValidator,
       severity: defectSeverityValidator,
       priority: defectPriorityValidator,
       status: defectStatusValidator,
@@ -73,6 +111,7 @@ export const listDefects = query({
 
     const defects = await ctx.db.query('defects').collect()
     const results = []
+
     for (const defect of defects) {
       const project = await ctx.db.get(defect.projectId)
       const reporter = await ctx.db.get(defect.reporterId)
@@ -105,9 +144,6 @@ export const listDefects = query({
   },
 })
 
-/**
- * Create a new defect
- */
 export const createDefect = mutation({
   args: {
     projectId: v.id('projects'),
@@ -147,9 +183,6 @@ export const createDefect = mutation({
   },
 })
 
-/**
- * Update defect
- */
 export const updateDefect = mutation({
   args: {
     defectId: v.id('defects'),
@@ -230,9 +263,6 @@ export const updateDefect = mutation({
   },
 })
 
-/**
- * Get a single defect by ID
- */
 export const getDefect = query({
   args: {
     defectId: v.id('defects'),
@@ -291,9 +321,6 @@ export const getDefect = query({
   },
 })
 
-/**
- * Add a comment to a defect
- */
 export const addComment = mutation({
   args: {
     defectId: v.id('defects'),
@@ -329,9 +356,6 @@ export const addComment = mutation({
   },
 })
 
-/**
- * Delete defect
- */
 export const deleteDefect = mutation({
   args: {
     defectId: v.id('defects'),
