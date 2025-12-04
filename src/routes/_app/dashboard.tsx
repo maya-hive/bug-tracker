@@ -30,7 +30,6 @@ function Dashboard() {
   const [filters, setFilters] = useState<DashboardFiltersType>({
     severity: null,
     type: null,
-    priority: null,
     assignedTo: null,
     reporter: null,
   })
@@ -69,10 +68,6 @@ function Dashboard() {
         }
 
         if (filters.type !== null && defect.type !== filters.type) {
-          return false
-        }
-
-        if (filters.priority !== null && defect.priority !== filters.priority) {
           return false
         }
 
@@ -123,7 +118,7 @@ function Dashboard() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="shrink-0">
             <h1 className="text-xl font-semibold">
-              {project?.name ? `${project.name} Dashboard` : 'Dashboard'}
+              {project?.name ? `Dashboard for ${project.name}` : 'Dashboard'}
             </h1>
           </div>
           <DashboardFilters

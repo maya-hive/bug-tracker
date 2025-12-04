@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import { CirclePlus, LayoutGrid, Table } from 'lucide-react'
+import { CirclePlus } from 'lucide-react'
 import { VALID_ROLES } from 'convex/lib/permissions'
 import type { Role } from 'convex/lib/permissions'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
@@ -17,7 +17,6 @@ import { AddCommentDialog } from '~/components/defects/add-comment-dialog'
 import { DefectsFilters } from '~/components/defects/defects-filters'
 import { useProject } from '~/hooks/use-project'
 import { Button } from '~/components/ui/button'
-import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -178,36 +177,17 @@ function Defects() {
 
   return (
     <>
-      <div className="mb-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="shrink-0">
+      <div className="mb-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
             <h1 className="text-xl font-semibold">
-              {project?.name ? `${project.name}` : 'All Defects'}
+              {project?.name ? `Defects for ${project.name}` : 'All Defects'}
             </h1>
+            <p className="text-muted-foreground">
+              Track and manage defects for your project.
+            </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <DefectsFilters
-              filters={filters}
-              users={users}
-              onFiltersChange={setFilters}
-            />
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={(value) => {
-                if (value === 'table' || value === 'cards') {
-                  setViewMode(value)
-                }
-              }}
-              variant="outline"
-            >
-              <ToggleGroupItem value="cards" aria-label="Card view">
-                <LayoutGrid className="size-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="table" aria-label="Table view">
-                <Table className="size-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
             {!([VALID_ROLES.TESTER] as ReadonlyArray<Role>).includes(
               authUser.role,
             ) && (
@@ -221,6 +201,13 @@ function Defects() {
             )}
           </div>
         </div>
+        <DefectsFilters
+          filters={filters}
+          users={users}
+          onFiltersChange={setFilters}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
       </div>
       <Suspense fallback={<div>Loading...</div>}>
         <DefectsTable

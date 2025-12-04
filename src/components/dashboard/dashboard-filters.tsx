@@ -25,7 +25,6 @@ import {
 export interface DashboardFilters {
   severity: string | null
   type: string | null
-  priority: string | null
   assignedTo: string | null
   reporter: string | null
 }
@@ -50,7 +49,6 @@ export function DashboardFilters({
   const hasActiveFilters =
     filters.severity !== null ||
     filters.type !== null ||
-    filters.priority !== null ||
     filters.assignedTo !== null ||
     filters.reporter !== null
 
@@ -58,7 +56,6 @@ export function DashboardFilters({
     onFiltersChange({
       severity: null,
       type: null,
-      priority: null,
       assignedTo: null,
       reporter: null,
     })
@@ -136,26 +133,6 @@ export function DashboardFilters({
             Improvement Request
           </SelectItem>
           <SelectItem value="unit test failure">Unit Test Failure</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.priority || 'all'}
-        onValueChange={(value) =>
-          onFiltersChange({
-            ...filters,
-            priority: value === 'all' ? null : value,
-          })
-        }
-      >
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Priority" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Priorities</SelectItem>
-          <SelectItem value="low">Low</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="high">High</SelectItem>
         </SelectContent>
       </Select>
 
