@@ -95,7 +95,7 @@ export function DefectCard({
 
   return (
     <>
-      <Card className="flex flex-col h-full gap-2">
+      <Card className="flex flex-col h-full gap-2 rounded-md shadow-none">
         <CardHeader className="pb-4 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-1.5">
@@ -243,7 +243,7 @@ export function DefectCard({
                   {comments.slice(0, 3).map((comment, index) => (
                     <div
                       key={index}
-                      className="text-sm p-3 rounded-lg bg-muted/50 border border-border/50 space-y-1.5"
+                      className="text-sm py-2 px-3 rounded-sm bg-muted/50 border border-border/50 space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-xs">
@@ -253,7 +253,7 @@ export function DefectCard({
                           {format(new Date(comment.timestamp), 'MMM d, yyyy')}
                         </span>
                       </div>
-                      <p className="text-sm leading-relaxed">{comment.text}</p>
+                      <p className="text-xs leading-relaxed">{comment.text}</p>
                     </div>
                   ))}
                   {commentsCount > 3 && (
@@ -269,7 +269,7 @@ export function DefectCard({
             <Button
               variant="outline"
               size="sm"
-              className="w-full h-9"
+              className="mt-2 w-full h-10"
               onClick={() => onAddComment(defect)}
             >
               <MessageSquare className="size-4" />

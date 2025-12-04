@@ -6,6 +6,7 @@ import { api } from 'convex/_generated/api'
 import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DashboardFilters as DashboardFiltersType } from '~/components/dashboard/dashboard-filters'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
+import type { Id } from 'convex/_generated/dataModel'
 import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
@@ -20,6 +21,10 @@ function Dashboard() {
   const defects = useQuery(api.defects.listDefects)
   const users = useQuery(api.users.listUsers)
   const [projectId] = useProject()
+
+  const project = useQuery(api.projects.getProject, {
+    projectId: projectId as Id<'projects'>,
+  })
 
   // Filter state
   const [filters, setFilters] = useState<DashboardFiltersType>({
@@ -117,7 +122,9 @@ function Dashboard() {
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="shrink-0">
-            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <h1 className="text-xl font-semibold">
+              {project?.name ? `${project.name} Dashboard` : 'Dashboard'}
+            </h1>
           </div>
           <DashboardFilters
             filters={filters}

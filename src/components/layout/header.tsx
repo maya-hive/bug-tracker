@@ -1,4 +1,4 @@
-import { Bug, ChevronsUpDown, Link } from 'lucide-react'
+import { Bug, Check, ChevronsUpDown, Link } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
@@ -91,8 +91,12 @@ export function TaskHeader() {
                         setSelectedProject(null)
                         setOpen(false)
                       }}
+                      className="relative"
                     >
-                      All Projects
+                      <span className="flex-1">All Projects</span>
+                      {!selectedProject && (
+                        <Check className="ml-2 h-4 w-4 shrink-0" />
+                      )}
                     </CommandItem>
                     {projects?.map((project) => (
                       <CommandItem
@@ -102,8 +106,12 @@ export function TaskHeader() {
                           setSelectedProject(project._id)
                           setOpen(false)
                         }}
+                        className="relative"
                       >
-                        {project.name}
+                        <span className="flex-1">{project.name}</span>
+                        {selectedProject === project._id && (
+                          <Check className="ml-2 h-4 w-4 shrink-0" />
+                        )}
                       </CommandItem>
                     ))}
                   </CommandGroup>
