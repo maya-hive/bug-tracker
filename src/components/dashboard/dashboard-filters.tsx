@@ -84,13 +84,13 @@ export function DashboardFilters({
     <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
       <Button
         variant="ghost"
-        size="icon"
         onClick={clearFilters}
         disabled={!hasActiveFilters}
-        className="h-9 w-9"
-        aria-label="Clear all filters"
+        className={cn({
+          'text-yellow-600 hover:text-yellow-600': hasActiveFilters,
+        })}
       >
-        <RotateCcw className="size-4" />
+        <RotateCcw className="size-4" /> Reset Filters
       </Button>
       <Select
         value={filters.severity || 'all'}
