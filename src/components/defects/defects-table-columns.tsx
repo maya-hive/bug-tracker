@@ -1,4 +1,4 @@
-import { Copy, Pencil, Trash2 } from 'lucide-react'
+import { Link, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
@@ -41,7 +41,7 @@ function IDCell({ row }: { row: { original: DefectTableItem } }) {
 
   return (
     <Button variant="ghost" size="icon" onClick={handleCopy}>
-      <Copy className="size-4" />
+      <Link className="size-4" />
     </Button>
   )
 }
@@ -278,7 +278,7 @@ export function createDefectsColumns(
   const columns: Array<ColumnDef<DefectTableItem>> = [
     {
       accessorKey: '_id',
-      header: 'ID',
+      header: 'Link',
       cell: ({ row }) => <IDCell row={row} />,
     },
     {
