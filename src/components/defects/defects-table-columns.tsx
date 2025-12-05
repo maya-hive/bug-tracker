@@ -8,7 +8,6 @@ import { DEFECT_PRIORITIES, DEFECT_SEVERITIES } from 'convex/defects'
 import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Id } from 'convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
