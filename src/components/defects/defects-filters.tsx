@@ -302,6 +302,9 @@ export function DefectsFilters({
           variant="ghost"
           onClick={clearFilters}
           disabled={!hasActiveFilters}
+          className={cn({
+            'text-yellow-600 hover:text-yellow-600': hasActiveFilters,
+          })}
         >
           <RotateCcw className="size-4" /> Reset Filters
         </Button>
