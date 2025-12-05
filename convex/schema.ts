@@ -51,6 +51,15 @@ export default defineSchema({
         }),
       ),
     ),
+    statusHistory: v.optional(
+      v.array(
+        v.object({
+          status: defectStatusValidator,
+          changedBy: v.id('users'),
+          timestamp: v.number(),
+        }),
+      ),
+    ),
     updatedAt: v.optional(v.number()),
   }).index('by_project', ['projectId']),
 })

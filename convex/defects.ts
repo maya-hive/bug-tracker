@@ -102,6 +102,15 @@ export const listDefects = query({
           }),
         ),
       ),
+      statusHistory: v.optional(
+        v.array(
+          v.object({
+            status: defectStatusValidator,
+            changedBy: v.id('users'),
+            timestamp: v.number(),
+          }),
+        ),
+      ),
       updatedAt: v.optional(v.number()),
     }),
   ),
@@ -139,6 +148,7 @@ export const listDefects = query({
         priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
+        statusHistory: defect.statusHistory,
         updatedAt: defect.updatedAt,
       })
     }
@@ -182,6 +192,13 @@ export const createDefect = mutation({
       priority: args.priority,
       status: args.status,
       comments: [],
+      statusHistory: [
+        {
+          status: args.status,
+          changedBy: reporterId,
+          timestamp: Date.now(),
+        },
+      ],
     })
   },
 })
@@ -222,6 +239,7 @@ export const updateDefect = mutation({
         | 'severity'
         | 'priority'
         | 'status'
+        | 'statusHistory'
         | 'updatedAt'
       >
     > = {}
@@ -258,8 +276,24 @@ export const updateDefect = mutation({
       updates.priority = args.priority
     }
 
-    if (args.status !== undefined) {
+    if (args.status !== undefined && args.status !== defect.status) {
       updates.status = args.status
+
+      const changedBy = await getAuthUserId(ctx)
+      if (!changedBy) {
+        throw new Error('Unauthorized')
+      }
+
+      const statusHistoryEntry = {
+        status: args.status,
+        changedBy,
+        timestamp: Date.now(),
+      }
+
+      updates.statusHistory = [
+        ...(defect.statusHistory ?? []),
+        statusHistoryEntry,
+      ]
     }
 
     updates.updatedAt = Date.now()
@@ -298,6 +332,15 @@ export const getDefect = query({
           }),
         ),
       ),
+      statusHistory: v.optional(
+        v.array(
+          v.object({
+            status: defectStatusValidator,
+            changedBy: v.id('users'),
+            timestamp: v.number(),
+          }),
+        ),
+      ),
       updatedAt: v.optional(v.number()),
     }),
   ),
@@ -325,6 +368,7 @@ export const getDefect = query({
       priority: defect.priority,
       status: defect.status,
       comments: defect.comments,
+      statusHistory: defect.statusHistory,
       updatedAt: defect.updatedAt,
     }
   },

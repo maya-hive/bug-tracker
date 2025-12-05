@@ -147,6 +147,7 @@ function Defects() {
         status: defect.status,
         comments: defect.comments,
         updatedAt: defect.updatedAt,
+        statusHistory: defect.statusHistory,
       }))
       .filter((defect) => {
         if (projectId !== null && defect.projectId !== projectId) {

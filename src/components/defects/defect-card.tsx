@@ -7,6 +7,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Clock,
   MessageSquare,
   Tag,
   UserCheck,
@@ -55,6 +56,7 @@ export function DefectCard({
   const users = useQuery(api.users.listUsers)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
+  const [statusHistoryExpanded, setStatusHistoryExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const statusOptions = getStatusOptionsForSelect()
@@ -89,6 +91,8 @@ export function DefectCard({
 
   const comments = defect.comments || []
   const commentsCount = comments.length
+  const statusHistory = defect.statusHistory || []
+  const statusHistoryCount = statusHistory.length
 
   const StatusIcon = getStatusIcon(defect.status)
   const statusIconColor = getStatusIconColor(defect.status)
@@ -223,6 +227,80 @@ export function DefectCard({
           </div>
 
           <div className="mt-auto space-y-2 pt-2 border-t border-border/50">
+            {statusHistoryCount > 0 && (
+              <Collapsible
+                open={statusHistoryExpanded}
+                onOpenChange={setStatusHistoryExpanded}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-sm h-9"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Clock className="size-4" />
+                      <span>
+                        {statusHistoryCount} status change
+                        {statusHistoryCount > 1 ? 's' : ''}
+                      </span>
+                    </span>
+                    {statusHistoryExpanded ? (
+                      <ChevronUp className="size-4" />
+                    ) : (
+                      <ChevronDown className="size-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2.5 pt-2">
+                  {statusHistory
+                    .slice()
+                    .reverse()
+                    .slice(0, 5)
+                    .map((entry, index) => {
+                      const EntryStatusIcon = getStatusIcon(entry.status)
+                      const entryStatusIconColor = getStatusIconColor(
+                        entry.status,
+                      )
+                      return (
+                        <div
+                          key={index}
+                          className="text-sm py-2 px-3 rounded-sm bg-muted/50 border border-border/50 space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Badge
+                                variant="outline"
+                                className="text-xs gap-1.5"
+                              >
+                                <EntryStatusIcon
+                                  className={cn(
+                                    'size-3.5',
+                                    entryStatusIconColor,
+                                  )}
+                                />
+                                {getStatusLabel(entry.status)}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground">
+                                Changed by {getUserName(entry.changedBy)}
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {format(new Date(entry.timestamp), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  {statusHistoryCount > 5 && (
+                    <p className="text-xs text-muted-foreground text-center pt-1">
+                      +{statusHistoryCount - 5} more change
+                      {statusHistoryCount - 5 > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
             {commentsCount > 0 && (
               <Collapsible
                 open={commentsExpanded}
