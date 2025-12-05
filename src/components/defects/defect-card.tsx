@@ -36,7 +36,6 @@ import {
 } from '~/components/ui/collapsible'
 import { cn } from '~/lib/utils'
 import { ImageZoom } from '~/components/ui/image-zoom'
-import { Skeleton } from '~/components/ui/skeleton'
 import {
   getStatusIcon,
   getStatusIconColor,
@@ -222,7 +221,7 @@ export function DefectCard({
                 />
               </ImageZoom>
             ) : (
-              <Skeleton className="h-56 w-full rounded-sm" />
+              <div className="h-56 w-full rounded-sm bg-muted/50 border border-border/50" />
             )}
           </div>
 
