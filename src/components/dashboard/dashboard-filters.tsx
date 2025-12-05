@@ -22,6 +22,7 @@ import {
   CommandItem,
   CommandList,
 } from '~/components/ui/command'
+import { cn } from '~/lib/utils'
 
 export interface DashboardFilters {
   severity: string | null
