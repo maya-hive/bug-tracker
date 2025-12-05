@@ -5,6 +5,7 @@ import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import { CirclePlus } from 'lucide-react'
 import { VALID_ROLES } from 'convex/lib/permissions'
+import { parseAsString, useQueryState } from 'nuqs'
 import type { Role } from 'convex/lib/permissions'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
@@ -41,6 +42,10 @@ function Defects() {
   const users = useQuery(api.users.listUsers)
   const [projectId] = useProject()
   const deleteDefect = useMutation(api.defects.deleteDefect)
+  const [defectIdParam, setDefectIdParam] = useQueryState(
+    'defect_id',
+    parseAsString,
+  )
   const [editingDefect, setEditingDefect] = useState<DefectTableItem | null>(
     null,
   )
@@ -66,12 +71,23 @@ function Defects() {
   })
 
   const [filters, setFilters] = useState<DefectsFiltersType>({
+    search: defectIdParam || null,
     severity: null,
     type: null,
     priority: null,
     status: null,
     assignedTo: null,
   })
+
+  useEffect(() => {
+    if (defectIdParam) {
+      setFilters((prev) => ({
+        ...prev,
+        search: defectIdParam,
+      }))
+      setDefectIdParam(null)
+    }
+  }, [defectIdParam, setDefectIdParam])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -134,6 +150,19 @@ function Defects() {
       .filter((defect) => {
         if (projectId !== null && defect.projectId !== projectId) {
           return false
+        }
+
+        if (filters.search !== null && filters.search.trim() !== '') {
+          const searchTerm = filters.search.toLowerCase().trim()
+          const defectName = defect.name.toLowerCase()
+          const defectId = defect._id.toLowerCase()
+
+          if (
+            !defectName.includes(searchTerm) &&
+            !defectId.includes(searchTerm)
+          ) {
+            return false
+          }
         }
 
         if (filters.severity !== null && defect.severity !== filters.severity) {

@@ -75,6 +75,9 @@ export function EditDefectDialog({
   const [uploadingFile, setUploadingFile] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const project = useQuery(api.projects.getProject, {
+    projectId: defect?.projectId ?? null,
+  } as { projectId: Id<'projects'> | null })
 
   const existingScreenshotUrl = useQuery(
     api.defects.getFileUrl,
@@ -102,8 +105,8 @@ export function EditDefectDialog({
 
       setIsSubmitting(true)
       try {
-        // Validate the form values (zod ensures they're valid enum strings)
         const validated = defectFormSchema.parse(value)
+
         await updateDefect({
           defectId: defect._id as Id<'defects'>,
           projectId: validated.projectId as Id<'projects'>,
@@ -199,9 +202,9 @@ export function EditDefectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Edit Defect</DialogTitle>
+          <DialogTitle>Edit Defect in {project?.name}</DialogTitle>
           <DialogDescription>
-            Update defect information and attachment.
+            Update defect information and attach a screenshot if applicable.
           </DialogDescription>
         </DialogHeader>
         <form

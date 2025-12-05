@@ -102,6 +102,9 @@ export function DefectCard({
               <CardTitle className="text-md font-semibold leading-tight line-clamp-2">
                 {defect.name}
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {defect.projectName}
+              </p>
             </div>
             <Select
               value={defect.status}

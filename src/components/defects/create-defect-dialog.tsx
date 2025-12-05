@@ -77,6 +77,9 @@ export function CreateDefectDialog({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedProject] = useProject()
   const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const project = useQuery(api.projects.getProject, {
+    projectId: selectedProject ?? null,
+  } as { projectId: Id<'projects'> | null })
 
   const form = useForm({
     defaultValues: {
@@ -117,7 +120,6 @@ export function CreateDefectDialog({
     },
   })
 
-  // Update projectId when selectedProject changes
   useEffect(() => {
     if (selectedProject) {
       form.setFieldValue('projectId', selectedProject)
@@ -133,6 +135,7 @@ export function CreateDefectDialog({
 
     setSelectedFile(file)
     setUploadingFile(true)
+
     try {
       const uploadUrl = await generateUploadUrl()
       const result = await fetch(uploadUrl, {
@@ -141,8 +144,8 @@ export function CreateDefectDialog({
         body: file,
       })
       const responseText = await result.text()
-      // Handle both JSON and plain text responses
       let storageId: string
+
       try {
         const parsed = JSON.parse(responseText)
         storageId = parsed.storageId || parsed
@@ -164,9 +167,9 @@ export function CreateDefectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Create Defect</DialogTitle>
+          <DialogTitle>Create Defect for {project?.name}</DialogTitle>
           <DialogDescription>
-            Create a new defect with details and an attachment.
+            Describe the defect in detail and attach a screenshot if applicable.
           </DialogDescription>
         </DialogHeader>
         <form

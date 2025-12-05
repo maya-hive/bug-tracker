@@ -140,6 +140,7 @@ export const listDefects = query({
         comments: defect.comments,
       })
     }
+
     return results
   },
 })

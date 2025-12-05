@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { Copy, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
@@ -25,6 +25,27 @@ import {
   getStatusOptionsForSelect,
 } from '~/components/defects/defect-status'
 import { cn } from '~/lib/utils'
+
+function IDCell({ row }: { row: { original: DefectTableItem } }) {
+  const handleCopy = async () => {
+    const url = window.location.href.split('?')[0]
+    const link = `${url}?defect_id=${row.original._id}`
+
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success('ID copied to clipboard')
+    } catch (error) {
+      toast.error('Failed to copy ID')
+      console.error(error)
+    }
+  }
+
+  return (
+    <Button variant="ghost" size="icon" onClick={handleCopy}>
+      <Copy className="size-4" />
+    </Button>
+  )
+}
 
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
   return <div className="font-medium">{row.original.name}</div>
@@ -112,7 +133,7 @@ function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
-  return <div className="text-sm font-medium">{row.original.projectName}</div>
+  return <div className="text-sm">{row.original.projectName}</div>
 }
 
 function TypeCell({ row }: { row: { original: DefectTableItem } }) {
@@ -245,9 +266,19 @@ export function createDefectsColumns(
 ): Array<ColumnDef<DefectTableItem>> {
   const columns: Array<ColumnDef<DefectTableItem>> = [
     {
+      accessorKey: '_id',
+      header: 'ID',
+      cell: ({ row }) => <IDCell row={row} />,
+    },
+    {
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <NameCell row={row} />,
+    },
+    {
+      accessorKey: 'projectId',
+      header: 'Project',
+      cell: ({ row }) => <ProjectCell row={row} />,
     },
     {
       accessorKey: 'type',
