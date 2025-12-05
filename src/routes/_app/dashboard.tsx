@@ -26,7 +26,6 @@ function Dashboard() {
     projectId: projectId as Id<'projects'>,
   })
 
-  // Filter state
   const [filters, setFilters] = useState<DashboardFiltersType>({
     severity: null,
     type: null,
@@ -57,6 +56,8 @@ function Dashboard() {
         priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
+        statusHistory: defect.statusHistory,
+        updatedAt: defect.updatedAt,
       }))
       .filter((defect) => {
         if (projectId !== null && defect.projectId !== projectId) {

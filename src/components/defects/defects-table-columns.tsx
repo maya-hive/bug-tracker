@@ -8,7 +8,6 @@ import { DEFECT_PRIORITIES, DEFECT_SEVERITIES } from 'convex/defects'
 import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Id } from 'convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -72,12 +71,12 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
   const StatusIcon = getStatusIcon(currentStatus)
   const statusIconColor = getStatusIconColor(currentStatus)
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: DefectStatus) => {
     setStatusUpdating(true)
     try {
       await updateDefect({
-        defectId: row.original._id as Id<'defects'>,
-        status: newStatus as DefectStatus,
+        defectId: row.original._id,
+        status: newStatus,
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -172,6 +171,18 @@ function CreatedDateCell({ row }: { row: { original: DefectTableItem } }) {
   return (
     <div className="text-muted-foreground text-sm">
       {format(new Date(row.original._creationTime), 'MMM d, yyyy')}
+    </div>
+  )
+}
+
+function UpdatedDateCell({ row }: { row: { original: DefectTableItem } }) {
+  if (!row.original.updatedAt) {
+    return null
+  }
+
+  return (
+    <div className="text-muted-foreground text-sm">
+      {format(new Date(row.original.updatedAt), 'MMM d, yyyy')}
     </div>
   )
 }
@@ -314,6 +325,11 @@ export function createDefectsColumns(
       accessorKey: '_creationTime',
       header: 'Created',
       cell: ({ row }) => <CreatedDateCell row={row} />,
+    },
+    {
+      accessorKey: 'updatedAt',
+      header: 'Updated',
+      cell: ({ row }) => <UpdatedDateCell row={row} />,
     },
   ]
 
