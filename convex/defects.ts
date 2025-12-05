@@ -102,6 +102,7 @@ export const listDefects = query({
           }),
         ),
       ),
+      updatedAt: v.optional(v.number()),
     }),
   ),
   handler: async (ctx) => {
@@ -138,6 +139,7 @@ export const listDefects = query({
         priority: defect.priority,
         status: defect.status,
         comments: defect.comments,
+        updatedAt: defect.updatedAt,
       })
     }
 
@@ -220,6 +222,7 @@ export const updateDefect = mutation({
         | 'severity'
         | 'priority'
         | 'status'
+        | 'updatedAt'
       >
     > = {}
 
@@ -259,7 +262,10 @@ export const updateDefect = mutation({
       updates.status = args.status
     }
 
+    updates.updatedAt = Date.now()
+
     await ctx.db.patch(args.defectId, updates)
+
     return null
   },
 })
@@ -292,6 +298,7 @@ export const getDefect = query({
           }),
         ),
       ),
+      updatedAt: v.optional(v.number()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -318,6 +325,7 @@ export const getDefect = query({
       priority: defect.priority,
       status: defect.status,
       comments: defect.comments,
+      updatedAt: defect.updatedAt,
     }
   },
 })

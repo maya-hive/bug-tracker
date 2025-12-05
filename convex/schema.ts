@@ -51,5 +51,6 @@ export default defineSchema({
         }),
       ),
     ),
+    updatedAt: v.optional(v.number()),
   }).index('by_project', ['projectId']),
 })

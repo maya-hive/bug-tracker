@@ -96,8 +96,8 @@ export function DefectCard({
   return (
     <>
       <Card className="flex flex-col h-full gap-2 rounded-md shadow-none">
-        <CardHeader className="pb-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
+        <CardHeader className="space-y-3">
+          <div className="mb-0 flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-1.5">
               <CardTitle className="text-md font-semibold leading-tight line-clamp-2">
                 {defect.name}
@@ -134,7 +134,7 @@ export function DefectCard({
             </Select>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="mb-1 flex items-center gap-2 flex-wrap">
             <Badge variant="default" className="gap-1.5">
               <AlertCircle className="size-3" />
               {defect.type}
@@ -154,11 +154,15 @@ export function DefectCard({
               {defect.priority}
             </Badge>
           </div>
+
+          <div className="text-xs text-muted-foreground">
+            Created on {format(new Date(defect._creationTime), 'MMM d, yyyy')}
+          </div>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-4 pt-0">
           <div className="space-y-1.5">
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+            <p className="text-sm leading-relaxed line-clamp-3">
               {defect.description}
             </p>
           </div>
