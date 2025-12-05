@@ -1,5 +1,6 @@
 import { ChevronsUpDown, LayoutGrid, RotateCcw, Table } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useDebouncedCallback } from '@tanstack/react-pacer'
 import {
   DEFECT_PRIORITIES,
   DEFECT_SEVERITIES,
@@ -38,6 +39,7 @@ import { cn } from '~/lib/utils'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
 
 export interface DefectsFilters {
+  search: string | null
   severity: string | null
   type: string | null
   priority: string | null
@@ -65,8 +67,29 @@ export function DefectsFilters({
   setViewMode,
 }: DefectsFiltersProps) {
   const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const [searchInput, setSearchInput] = useState(filters.search || '')
+
+  const filtersRef = useRef(filters)
+  filtersRef.current = filters
+
+  useEffect(() => {
+    setSearchInput(filters.search || '')
+  }, [filters.search])
+
+  const debouncedSearch = useDebouncedCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filtersRef.current,
+        search: value.trim() === '' ? null : value,
+      })
+    },
+    {
+      wait: 300,
+    },
+  )
 
   const hasActiveFilters =
+    (filters.search !== null && filters.search.trim() !== '') ||
     filters.severity !== null ||
     filters.type !== null ||
     filters.priority !== null ||
@@ -75,6 +98,7 @@ export function DefectsFilters({
 
   const clearFilters = () => {
     onFiltersChange({
+      search: null,
       severity: null,
       type: null,
       priority: null,
@@ -97,8 +121,14 @@ export function DefectsFilters({
     <div className="flex flex-wrap items-center gap-3 justify-between">
       <div className="flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Filter defects..."
+          placeholder="Search"
           className="w-[150px] lg:w-[250px]"
+          value={searchInput}
+          onChange={(e) => {
+            const value = e.target.value
+            setSearchInput(value)
+            debouncedSearch(value)
+          }}
         />
         <Select
           value={filters.severity || 'all'}
