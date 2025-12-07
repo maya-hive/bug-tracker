@@ -17,3 +17,25 @@ The development team spends unnecessary time and effort wrangling shared spreads
 - Offers powerful search, filtering, and sorting tools for defects
 - Includes built-in notifications and automated follow-up reminders
 - Automates defect tracking to prevent missed updates
+
+### Development
+
+Install bun to get started: https://bun.com
+
+Install dependencies:
+
+```bash
+bun install
+```
+
+Run development server:
+
+```bash
+bun dev
+```
+
+Deploy to production:
+
+```bash
+bunx convex deploy --cmd 'bun --bun run build'
+```
