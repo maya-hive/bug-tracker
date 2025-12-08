@@ -5,7 +5,6 @@ import {
   defectPriorityValidator,
   defectSeverityValidator,
   defectStatusValidator,
-  defectTypeValidator,
   defectTypesValidator,
 } from './defects'
 
@@ -40,8 +39,8 @@ export default defineSchema({
     reporterId: v.id('users'),
     severity: defectSeverityValidator,
     priority: defectPriorityValidator,
-    type: defectTypeValidator,
     types: defectTypesValidator,
+    type: v.optional(v.string()),
     status: defectStatusValidator,
     screenshot: v.optional(v.id('_storage')),
     comments: v.optional(

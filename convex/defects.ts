@@ -39,10 +39,6 @@ export const defectTypesValidator = v.optional(
   v.array(v.union(...DEFECT_TYPES.map(({ value }) => v.literal(value)))),
 )
 
-export const defectTypeValidator = v.optional(
-  v.union(...DEFECT_TYPES.map(({ value }) => v.literal(value))),
-)
-
 export const defectSeverityValidator = v.union(
   ...DEFECT_SEVERITIES.map(({ value }) => v.literal(value)),
 )
@@ -430,42 +426,5 @@ export const deleteDefect = mutation({
 
     await ctx.db.delete(args.defectId)
     return null
-  },
-})
-
-export const migrateTypeToTypes = mutation({
-  args: {},
-  returns: v.object({
-    totalDefects: v.number(),
-    migratedCount: v.number(),
-    skippedCount: v.number(),
-  }),
-  handler: async (ctx) => {
-    const defects = await ctx.db.query('defects').collect()
-    let migratedCount = 0
-    let skippedCount = 0
-
-    for (const defect of defects) {
-      // Check if defect has a type field but types is empty/null
-      const oldType = defect.type
-      const existingTypes = defect.types
-
-      // Migrate if there's an old type value and types array is empty or undefined
-      if (oldType && (!existingTypes || existingTypes.length === 0)) {
-        // Migrate: copy type to types array
-        await ctx.db.patch(defect._id, {
-          types: [oldType],
-        })
-        migratedCount++
-      } else {
-        skippedCount++
-      }
-    }
-
-    return {
-      totalDefects: defects.length,
-      migratedCount,
-      skippedCount,
-    }
   },
 })
