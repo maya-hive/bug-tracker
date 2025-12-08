@@ -1,13 +1,12 @@
 import { Link, Pencil, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import { DEFECT_PRIORITIES, DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
-import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { Id } from 'convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -20,8 +19,6 @@ import {
 import {
   getStatusIcon,
   getStatusIconColor,
-  getStatusLabel,
-  getStatusOptionsForSelect,
 } from '~/components/defects/defect-status'
 import { cn } from '~/lib/utils'
 
@@ -52,31 +49,27 @@ function NameCell({ row }: { row: { original: DefectTableItem } }) {
 
 function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
   return (
-    <Badge
-      variant={
-        DEFECT_SEVERITIES.find((s) => s.value === row.original.severity)?.color
-      }
-    >
-      {DEFECT_SEVERITIES.find((s) => s.value === row.original.severity)?.label}
+    <Badge variant={row.original.severity.color as any}>
+      {row.original.severity.label}
     </Badge>
   )
 }
 
 function StatusCell({ row }: { row: { original: DefectTableItem } }) {
   const currentStatus = row.original.status
-  const statusOptions = getStatusOptionsForSelect()
+  const defectStatuses = useQuery(api.defects.getDefectStatuses)
   const updateDefect = useMutation(api.defects.updateDefect)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
-  const StatusIcon = getStatusIcon(currentStatus)
-  const statusIconColor = getStatusIconColor(currentStatus)
+  const StatusIcon = getStatusIcon(currentStatus.value as any)
+  const statusIconColor = getStatusIconColor(currentStatus.value as any)
 
-  const handleStatusChange = async (newStatus: DefectStatus) => {
+  const handleStatusChange = async (newStatusId: string) => {
     setStatusUpdating(true)
     try {
       await updateDefect({
         defectId: row.original._id,
-        status: newStatus,
+        status: newStatusId as Id<'defectStatuses'>,
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -89,25 +82,25 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
 
   return (
     <Select
-      value={currentStatus}
+      value={currentStatus._id}
       onValueChange={handleStatusChange}
-      disabled={statusUpdating}
+      disabled={statusUpdating || !defectStatuses}
     >
       <SelectTrigger className="w-fit" size="sm">
         <div className="flex items-center gap-2">
           <StatusIcon className={cn('size-4', statusIconColor)} />
-          <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
+          <SelectValue>{currentStatus.label}</SelectValue>
         </div>
       </SelectTrigger>
       <SelectContent>
-        {statusOptions.map((option) => {
-          const OptionIcon = getStatusIcon(option.value)
-          const optionIconColor = getStatusIconColor(option.value)
+        {defectStatuses?.map((status) => {
+          const OptionIcon = getStatusIcon(status.value as any)
+          const optionIconColor = getStatusIconColor(status.value as any)
           return (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={status._id} value={status._id}>
               <div className="flex items-center gap-2">
                 <OptionIcon className={cn('size-4', optionIconColor)} />
-                <span>{option.label}</span>
+                <span>{status.label}</span>
               </div>
             </SelectItem>
           )
@@ -119,9 +112,9 @@ function StatusCell({ row }: { row: { original: DefectTableItem } }) {
 
 function StatusCellReadOnly({ row }: { row: { original: DefectTableItem } }) {
   const status = row.original.status
-  const statusLabel = getStatusLabel(status)
-  const StatusIcon = getStatusIcon(status)
-  const statusIconColor = getStatusIconColor(status)
+  const statusLabel = status.label
+  const StatusIcon = getStatusIcon(status.value as any)
+  const statusIconColor = getStatusIconColor(status.value as any)
 
   return (
     <Badge variant="outline" className="text-sm gap-1.5">
@@ -136,17 +129,16 @@ function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function TypeCell({ row }: { row: { original: DefectTableItem } }) {
-  const types = row.original.types || []
+  const types = row.original.types
   if (types.length === 0) {
     return <span className="text-muted-foreground text-sm">No types</span>
   }
   return (
     <div className="flex flex-wrap gap-1">
       {types.map((type) => {
-        const typeLabel = DEFECT_TYPES.find((t) => t.value === type)?.label || type
         return (
-          <Badge key={type} variant="default" className="text-xs">
-            {typeLabel}
+          <Badge key={type._id} variant="default" className="text-xs">
+            {type.label}
           </Badge>
         )
       })}
@@ -156,12 +148,8 @@ function TypeCell({ row }: { row: { original: DefectTableItem } }) {
 
 function PriorityCell({ row }: { row: { original: DefectTableItem } }) {
   return (
-    <Badge
-      variant={
-        DEFECT_PRIORITIES.find((p) => p.value === row.original.priority)?.color
-      }
-    >
-      {DEFECT_PRIORITIES.find((p) => p.value === row.original.priority)?.label}
+    <Badge variant={row.original.priority.color as any}>
+      {row.original.priority.label}
     </Badge>
   )
 }

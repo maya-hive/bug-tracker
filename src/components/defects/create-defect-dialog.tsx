@@ -5,16 +5,9 @@ import { ChevronsUpDown } from 'lucide-react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import {
-  DEFECT_PRIORITIES,
-  DEFECT_SEVERITIES,
-  DEFECT_TYPES,
-} from 'convex/defects'
 import type { Id } from 'convex/_generated/dataModel'
-import {
-  defaultDefectFormValues,
-  defectFormSchema,
-} from '~/components/defects/defect-form.types'
+import type { DefectFormInput } from '~/components/defects/defect-form.types'
+import { defectFormSchema } from '~/components/defects/defect-form.types'
 import {
   Dialog,
   DialogContent,
@@ -66,6 +59,10 @@ export function CreateDefectDialog({
   const createDefect = useMutation(api.defects.createDefect)
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
   const users = useQuery(api.users.listUsers)
+  const defectTypes = useQuery(api.defects.getDefectTypes)
+  const defectSeverities = useQuery(api.defects.getDefectSeverities)
+  const defectPriorities = useQuery(api.defects.getDefectPriorities)
+  const defectStatuses = useQuery(api.defects.getDefectStatuses)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -79,9 +76,15 @@ export function CreateDefectDialog({
 
   const form = useForm({
     defaultValues: {
-      ...defaultDefectFormValues,
+      name: '',
+      types: [],
+      description: '',
+      assignedTo: '',
+      severity: '',
+      priority: '',
       projectId: selectedProject ?? '',
-    },
+      status: defectStatuses?.[0]?._id ?? '',
+    } as DefectFormInput,
     validators: {
       onSubmit: defectFormSchema,
     },
@@ -95,10 +98,10 @@ export function CreateDefectDialog({
           name: validated.name,
           description: validated.description,
           assignedTo: validated.assignedTo as Id<'users'>,
-          types: validated.types,
-          severity: validated.severity,
-          priority: validated.priority,
-          status: validated.status,
+          types: validated.types as Array<Id<'defectTypes'>>,
+          severity: validated.severity as Id<'defectSeverities'>,
+          priority: validated.priority as Id<'defectPriorities'>,
+          status: validated.status as Id<'defectStatuses'>,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -121,6 +124,19 @@ export function CreateDefectDialog({
       form.setFieldValue('projectId', selectedProject)
     }
   }, [selectedProject, form])
+
+  useEffect(() => {
+    if (
+      defectStatuses &&
+      defectStatuses.length > 0 &&
+      !form.state.values.status
+    ) {
+      // Set default status to first status (usually "open")
+      const defaultStatus =
+        defectStatuses.find((s) => s.value === 'open') ?? defectStatuses[0]
+      form.setFieldValue('status', defaultStatus._id)
+    }
+  }, [defectStatuses, form])
 
   const handleFileUpload = async (file: File | null) => {
     if (!file) {
@@ -240,9 +256,8 @@ export function CreateDefectDialog({
                       selectedTypes.length === 0
                         ? 'Select types'
                         : selectedTypes.length === 1
-                          ? DEFECT_TYPES.find(
-                              (t) => t.value === selectedTypes[0],
-                            )?.label || 'Select types'
+                          ? defectTypes?.find((t) => t._id === selectedTypes[0])
+                              ?.label || 'Select types'
                           : `${selectedTypes.length} types selected`
                     return (
                       <Field data-invalid={isInvalid}>
@@ -256,7 +271,7 @@ export function CreateDefectDialog({
                               aria-expanded={typesOpen}
                               className="w-full justify-between"
                               aria-invalid={isInvalid}
-                              disabled={isSubmitting}
+                              disabled={isSubmitting || !defectTypes}
                             >
                               {displayValue}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -268,20 +283,20 @@ export function CreateDefectDialog({
                               <CommandList>
                                 <CommandEmpty>No type found.</CommandEmpty>
                                 <CommandGroup>
-                                  {DEFECT_TYPES.map((type) => {
+                                  {defectTypes?.map((type) => {
                                     const isSelected = selectedTypes.includes(
-                                      type.value,
+                                      type._id,
                                     )
                                     return (
                                       <CommandItem
-                                        key={type.value}
-                                        value={type.value}
+                                        key={type._id}
+                                        value={type._id}
                                         onSelect={() => {
                                           const newTypes = isSelected
                                             ? selectedTypes.filter(
-                                                (t) => t !== type.value,
+                                                (t) => t !== type._id,
                                               )
-                                            : [...selectedTypes, type.value]
+                                            : [...selectedTypes, type._id]
                                           field.handleChange(newTypes)
                                         }}
                                         className="flex items-center gap-2"
@@ -291,9 +306,9 @@ export function CreateDefectDialog({
                                           onCheckedChange={() => {
                                             const newTypes = isSelected
                                               ? selectedTypes.filter(
-                                                  (t) => t !== type.value,
+                                                  (t) => t !== type._id,
                                                 )
-                                              : [...selectedTypes, type.value]
+                                              : [...selectedTypes, type._id]
                                             field.handleChange(newTypes)
                                           }}
                                         />
@@ -390,6 +405,7 @@ export function CreateDefectDialog({
                         <Select
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
+                          disabled={!defectSeverities}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -399,10 +415,10 @@ export function CreateDefectDialog({
                             <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEFECT_SEVERITIES.map((severity) => (
+                            {defectSeverities?.map((severity) => (
                               <SelectItem
-                                key={severity.value}
-                                value={severity.value}
+                                key={severity._id}
+                                value={severity._id}
                               >
                                 {severity.label}
                               </SelectItem>
@@ -427,6 +443,7 @@ export function CreateDefectDialog({
                         <Select
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
+                          disabled={!defectPriorities}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -436,10 +453,10 @@ export function CreateDefectDialog({
                             <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEFECT_PRIORITIES.map((priority) => (
+                            {defectPriorities?.map((priority) => (
                               <SelectItem
-                                key={priority.value}
-                                value={priority.value}
+                                key={priority._id}
+                                value={priority._id}
                               >
                                 {priority.label}
                               </SelectItem>

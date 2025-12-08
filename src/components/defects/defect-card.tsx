@@ -14,8 +14,6 @@ import {
   UserRoundPen,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
-import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -39,8 +37,6 @@ import { ImageZoom } from '~/components/ui/image-zoom'
 import {
   getStatusIcon,
   getStatusIconColor,
-  getStatusLabel,
-  getStatusOptionsForSelect,
 } from '~/components/defects/defect-status'
 
 export function DefectCard({
@@ -53,12 +49,11 @@ export function DefectCard({
 }) {
   const updateDefect = useMutation(api.defects.updateDefect)
   const users = useQuery(api.users.listUsers)
+  const defectStatuses = useQuery(api.defects.getDefectStatuses)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const [statusHistoryExpanded, setStatusHistoryExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-
-  const statusOptions = getStatusOptionsForSelect()
 
   const imageUrl = useQuery(
     api.defects.getFileUrl,
@@ -67,12 +62,12 @@ export function DefectCard({
       : 'skip',
   )
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatusId: string) => {
     setStatusUpdating(true)
     try {
       await updateDefect({
         defectId: defect._id as Id<'defects'>,
-        status: newStatus as DefectStatus,
+        status: newStatusId as Id<'defectStatuses'>,
       })
       toast.success('Status updated successfully')
     } catch (error) {
@@ -90,11 +85,11 @@ export function DefectCard({
 
   const comments = defect.comments || []
   const commentsCount = comments.length
-  const statusHistory = defect.statusHistory || []
+  const statusHistory = defect.statusHistory
   const statusHistoryCount = statusHistory.length
 
-  const StatusIcon = getStatusIcon(defect.status)
-  const statusIconColor = getStatusIconColor(defect.status)
+  const StatusIcon = getStatusIcon(defect.status.value as any)
+  const statusIconColor = getStatusIconColor(defect.status.value as any)
 
   return (
     <>
@@ -110,25 +105,27 @@ export function DefectCard({
               </p>
             </div>
             <Select
-              value={defect.status}
+              value={defect.status._id}
               onValueChange={handleStatusChange}
-              disabled={statusUpdating}
+              disabled={statusUpdating || !defectStatuses}
             >
               <SelectTrigger>
                 <div className="flex items-center gap-2">
                   <StatusIcon className={cn('size-4', statusIconColor)} />
-                  <SelectValue>{getStatusLabel(defect.status)}</SelectValue>
+                  <SelectValue>{defect.status.label}</SelectValue>
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map((option) => {
-                  const OptionIcon = getStatusIcon(option.value)
-                  const optionIconColor = getStatusIconColor(option.value)
+                {defectStatuses?.map((status) => {
+                  const OptionIcon = getStatusIcon(status.value as any)
+                  const optionIconColor = getStatusIconColor(
+                    status.value as any,
+                  )
                   return (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={status._id} value={status._id}>
                       <div className="flex items-center gap-2">
                         <OptionIcon className={cn('size-4', optionIconColor)} />
-                        <span>{option.label}</span>
+                        <span>{status.label}</span>
                       </div>
                     </SelectItem>
                   )
@@ -138,29 +135,21 @@ export function DefectCard({
           </div>
 
           <div className="mb-1 flex items-center gap-2 flex-wrap">
-            {(defect.types || []).map((type) => {
-              const typeLabel =
-                DEFECT_TYPES.find((t) => t.value === type)?.label || type
+            {defect.types.map((type) => {
               return (
-                <Badge key={type} variant="default" className="gap-1.5">
+                <Badge key={type._id} variant="default" className="gap-1.5">
                   <AlertCircle className="size-3" />
-                  {typeLabel}
+                  {type.label}
                 </Badge>
               )
             })}
-            <Badge
-              variant={
-                DEFECT_SEVERITIES.find((s) => s.value === defect.severity)
-                  ?.color
-              }
-              className="gap-1.5"
-            >
+            <Badge variant={defect.severity.color as any} className="gap-1.5">
               <Activity className="size-3" />
-              {defect.severity}
+              {defect.severity.label}
             </Badge>
             <Badge variant="outline" className="text-xs gap-1.5">
               <Tag className="size-3" />
-              {defect.priority}
+              {defect.priority.label}
             </Badge>
           </div>
 
@@ -262,9 +251,11 @@ export function DefectCard({
                     .reverse()
                     .slice(0, 5)
                     .map((entry, index) => {
-                      const EntryStatusIcon = getStatusIcon(entry.status)
+                      const EntryStatusIcon = getStatusIcon(
+                        entry.status.value as any,
+                      )
                       const entryStatusIconColor = getStatusIconColor(
-                        entry.status,
+                        entry.status.value as any,
                       )
                       return (
                         <div
@@ -283,7 +274,7 @@ export function DefectCard({
                                     entryStatusIconColor,
                                   )}
                                 />
-                                {getStatusLabel(entry.status)}
+                                {entry.status.label}
                               </Badge>
                               <div className="text-xs text-muted-foreground">
                                 Changed by {getUserName(entry.changedBy)}

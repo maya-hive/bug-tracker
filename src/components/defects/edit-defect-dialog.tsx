@@ -5,13 +5,9 @@ import { ChevronsUpDown } from 'lucide-react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import {
-  DEFECT_PRIORITIES,
-  DEFECT_SEVERITIES,
-  DEFECT_TYPES,
-} from 'convex/defects'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectTableItem } from './defects-table.types'
+import type { DefectFormInput } from '~/components/defects/defect-form.types'
 import { defectFormSchema } from '~/components/defects/defect-form.types'
 import {
   Dialog,
@@ -65,6 +61,9 @@ export function EditDefectDialog({
   const updateDefect = useMutation(api.defects.updateDefect)
   const generateUploadUrl = useMutation(api.defects.generateUploadUrl)
   const users = useQuery(api.users.listUsers)
+  const defectTypes = useQuery(api.defects.getDefectTypes)
+  const defectSeverities = useQuery(api.defects.getDefectSeverities)
+  const defectPriorities = useQuery(api.defects.getDefectPriorities)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -86,13 +85,13 @@ export function EditDefectDialog({
     defaultValues: {
       projectId: (defect?.projectId || '') as string,
       name: defect?.name || '',
-      types: (defect?.types || []) as Array<string>,
+      types: (defect?.types || []).map((t) => t._id) as Array<string>,
       description: defect?.description || '',
       assignedTo: (defect?.assignedTo || '') as string,
-      severity: (defect?.severity || '') as string,
-      priority: (defect?.priority || '') as string,
-      status: (defect?.status || 'open') as string,
-    },
+      severity: defect?.severity._id,
+      priority: defect?.priority._id,
+      status: defect?.status._id,
+    } as DefectFormInput,
     validators: {
       onSubmit: defectFormSchema,
     },
@@ -107,12 +106,12 @@ export function EditDefectDialog({
           defectId: defect._id as Id<'defects'>,
           projectId: validated.projectId as Id<'projects'>,
           name: validated.name,
-          types: validated.types,
           description: validated.description,
+          types: validated.types as Array<Id<'defectTypes'>>,
           assignedTo: validated.assignedTo as Id<'users'>,
-          severity: validated.severity,
-          priority: validated.priority,
-          status: validated.status,
+          severity: validated.severity as Id<'defectSeverities'>,
+          priority: validated.priority as Id<'defectPriorities'>,
+          status: validated.status as Id<'defectStatuses'>,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -134,12 +133,12 @@ export function EditDefectDialog({
       form.reset({
         projectId: String(defect.projectId),
         name: defect.name,
-        types: defect.types || [],
+        types: defect.types.map((t) => t._id),
         description: defect.description,
         assignedTo: String(defect.assignedTo || ''),
-        severity: String(defect.severity),
-        priority: String(defect.priority),
-        status: String(defect.status),
+        severity: defect.severity._id,
+        priority: defect.priority._id,
+        status: defect.status._id,
       })
 
       setScreenshot(defect.screenshot || null)
@@ -275,9 +274,8 @@ export function EditDefectDialog({
                       selectedTypes.length === 0
                         ? 'Select types'
                         : selectedTypes.length === 1
-                          ? DEFECT_TYPES.find(
-                              (t) => t.value === selectedTypes[0],
-                            )?.label || 'Select types'
+                          ? defectTypes?.find((t) => t._id === selectedTypes[0])
+                              ?.label || 'Select types'
                           : `${selectedTypes.length} types selected`
                     return (
                       <Field data-invalid={isInvalid}>
@@ -291,7 +289,7 @@ export function EditDefectDialog({
                               aria-expanded={typesOpen}
                               className="w-full justify-between"
                               aria-invalid={isInvalid}
-                              disabled={isSubmitting}
+                              disabled={isSubmitting || !defectTypes}
                             >
                               {displayValue}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -303,20 +301,20 @@ export function EditDefectDialog({
                               <CommandList>
                                 <CommandEmpty>No type found.</CommandEmpty>
                                 <CommandGroup>
-                                  {DEFECT_TYPES.map((type) => {
+                                  {defectTypes?.map((type) => {
                                     const isSelected = selectedTypes.includes(
-                                      type.value,
+                                      type._id,
                                     )
                                     return (
                                       <CommandItem
-                                        key={type.value}
-                                        value={type.value}
+                                        key={type._id}
+                                        value={type._id}
                                         onSelect={() => {
                                           const newTypes = isSelected
                                             ? selectedTypes.filter(
-                                                (t) => t !== type.value,
+                                                (t) => t !== type._id,
                                               )
-                                            : [...selectedTypes, type.value]
+                                            : [...selectedTypes, type._id]
                                           field.handleChange(newTypes)
                                         }}
                                         className="flex items-center gap-2"
@@ -326,9 +324,9 @@ export function EditDefectDialog({
                                           onCheckedChange={() => {
                                             const newTypes = isSelected
                                               ? selectedTypes.filter(
-                                                  (t) => t !== type.value,
+                                                  (t) => t !== type._id,
                                                 )
-                                              : [...selectedTypes, type.value]
+                                              : [...selectedTypes, type._id]
                                             field.handleChange(newTypes)
                                           }}
                                         />
@@ -431,6 +429,7 @@ export function EditDefectDialog({
                         <Select
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
+                          disabled={!defectSeverities}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -440,10 +439,10 @@ export function EditDefectDialog({
                             <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEFECT_SEVERITIES.map((severity) => (
+                            {defectSeverities?.map((severity) => (
                               <SelectItem
-                                key={severity.id}
-                                value={severity.value}
+                                key={severity._id}
+                                value={severity._id}
                               >
                                 {severity.label}
                               </SelectItem>
@@ -468,6 +467,7 @@ export function EditDefectDialog({
                         <Select
                           value={field.state.value}
                           onValueChange={(value) => field.handleChange(value)}
+                          disabled={!defectPriorities}
                         >
                           <SelectTrigger
                             id={field.name}
@@ -477,10 +477,10 @@ export function EditDefectDialog({
                             <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEFECT_PRIORITIES.map((priority) => (
+                            {defectPriorities?.map((priority) => (
                               <SelectItem
-                                key={priority.id}
-                                value={priority.value}
+                                key={priority._id}
+                                value={priority._id}
                               >
                                 {priority.label}
                               </SelectItem>

@@ -10,7 +10,6 @@ import type { Role } from 'convex/lib/permissions'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectsFilters as DefectsFiltersType } from '~/components/defects/defects-filters'
-import type { DefectType } from 'convex/defects'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDefectsColumns } from '~/components/defects/defects-table-columns'
 import { EditDefectDialog } from '~/components/defects/edit-defect-dialog'
@@ -74,7 +73,7 @@ function Defects() {
   const [filters, setFilters] = useState<DefectsFiltersType>({
     search: defectIdParam || null,
     severity: null,
-    type: null,
+    types: [],
     priority: null,
     status: null,
     assignedTo: null,
@@ -168,22 +167,27 @@ function Defects() {
           }
         }
 
-        if (filters.severity !== null && defect.severity !== filters.severity) {
+        if (
+          filters.severity !== null &&
+          defect.severity._id !== filters.severity
+        ) {
           return false
         }
 
-        if (filters.type !== null) {
-          const defectTypes = defect.types || []
-          if (!defectTypes.includes(filters.type as DefectType)) {
+        if (filters.types.length > 0) {
+          if (!defect.types.some((t) => filters.types.includes(t._id))) {
             return false
           }
         }
 
-        if (filters.priority !== null && defect.priority !== filters.priority) {
+        if (
+          filters.priority !== null &&
+          defect.priority._id !== filters.priority
+        ) {
           return false
         }
 
-        if (filters.status !== null && defect.status !== filters.status) {
+        if (filters.status !== null && defect.status._id !== filters.status) {
           return false
         }
 

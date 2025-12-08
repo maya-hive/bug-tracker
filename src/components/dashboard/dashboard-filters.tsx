@@ -1,6 +1,7 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
+import { useQuery } from 'convex/react'
+import { api } from 'convex/_generated/api'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -26,7 +27,7 @@ import { cn } from '~/lib/utils'
 
 export interface DashboardFilters {
   severity: string | null
-  type: string | null
+  types: Array<string>
   assignedTo: string | null
   reporter: string | null
 }
@@ -46,18 +47,20 @@ export function DashboardFilters({
   users,
   onFiltersChange,
 }: DashboardFiltersProps) {
+  const defectTypes = useQuery(api.defects.getDefectTypes)
+  const defectSeverities = useQuery(api.defects.getDefectSeverities)
   const [assignedToOpen, setAssignedToOpen] = useState(false)
   const [reporterOpen, setReporterOpen] = useState(false)
   const hasActiveFilters =
     filters.severity !== null ||
-    filters.type !== null ||
+    filters.types.length > 0 ||
     filters.assignedTo !== null ||
     filters.reporter !== null
 
   const clearFilters = () => {
     onFiltersChange({
       severity: null,
-      type: null,
+      types: [],
       assignedTo: null,
       reporter: null,
     })
@@ -67,19 +70,12 @@ export function DashboardFilters({
     (user) => user._id === filters.assignedTo,
   )
   const assignedToDisplayValue =
-    filters.assignedTo === null
-      ? 'All Assignees'
-      : selectedAssignedToUser?.name ||
-        selectedAssignedToUser?.email ||
-        'Unknown'
-
+    filters.assignedTo === null ? 'All Assignees' : selectedAssignedToUser?.name
   const selectedReporterUser = users?.find(
     (user) => user._id === filters.reporter,
   )
   const reporterDisplayValue =
-    filters.reporter === null
-      ? 'All Reporters'
-      : selectedReporterUser?.name || selectedReporterUser?.email || 'Unknown'
+    filters.reporter === null ? 'All Reporters' : selectedReporterUser?.name
 
   return (
     <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
@@ -101,14 +97,15 @@ export function DashboardFilters({
             severity: value === 'all' ? null : value,
           })
         }
+        disabled={!defectSeverities}
       >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Severity" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
-          {DEFECT_SEVERITIES.map((severity) => (
-            <SelectItem key={severity.value} value={severity.value}>
+          {defectSeverities?.map((severity) => (
+            <SelectItem key={severity._id} value={severity._id}>
               {severity.label}
             </SelectItem>
           ))}
@@ -116,21 +113,22 @@ export function DashboardFilters({
       </Select>
 
       <Select
-        value={filters.type || 'all'}
+        value={filters.types.length > 0 ? filters.types[0] : 'all'}
         onValueChange={(value) =>
           onFiltersChange({
             ...filters,
-            type: value === 'all' ? null : value,
+            types: value === 'all' ? [] : [value],
           })
         }
+        disabled={!defectTypes}
       >
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {DEFECT_TYPES.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
+          {defectTypes?.map((type) => (
+            <SelectItem key={type._id} value={type._id}>
               {type.label}
             </SelectItem>
           ))}

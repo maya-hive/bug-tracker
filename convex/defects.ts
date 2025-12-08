@@ -1,7 +1,7 @@
 import { getAuthUserId } from '@convex-dev/auth/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { Doc } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 
 export const DEFECT_TYPES = [
   { id: 1, label: 'Functional', value: 'functional' },
@@ -35,26 +35,159 @@ export const DEFECT_STATUSES = [
   { id: 7, label: 'Hold', value: 'hold' },
 ] as const
 
-export const defectTypesValidator = v.optional(
-  v.array(v.union(...DEFECT_TYPES.map(({ value }) => v.literal(value)))),
-)
-
-export const defectSeverityValidator = v.union(
-  ...DEFECT_SEVERITIES.map(({ value }) => v.literal(value)),
-)
-
-export const defectPriorityValidator = v.union(
-  ...DEFECT_PRIORITIES.map(({ value }) => v.literal(value)),
-)
-
-export const defectStatusValidator = v.union(
-  ...DEFECT_STATUSES.map(({ value }) => v.literal(value)),
-)
-
 export type DefectType = (typeof DEFECT_TYPES)[number]['value']
 export type DefectSeverity = (typeof DEFECT_SEVERITIES)[number]['value']
 export type DefectPriority = (typeof DEFECT_PRIORITIES)[number]['value']
 export type DefectStatus = (typeof DEFECT_STATUSES)[number]['value']
+
+export const seedDefectOptionsData = mutation({
+  args: {},
+  returns: v.object({
+    types: v.number(),
+    severities: v.number(),
+    priorities: v.number(),
+    statuses: v.number(),
+  }),
+  handler: async (ctx) => {
+    const types = await ctx.db.query('defectTypes').collect()
+    const severities = await ctx.db.query('defectSeverities').collect()
+    const priorities = await ctx.db.query('defectPriorities').collect()
+    const statuses = await ctx.db.query('defectStatuses').collect()
+
+    if (
+      types.length > 0 ||
+      severities.length > 0 ||
+      priorities.length > 0 ||
+      statuses.length > 0
+    ) {
+      return {
+        types: types.length,
+        severities: severities.length,
+        priorities: priorities.length,
+        statuses: statuses.length,
+      }
+    }
+
+    const typeIds: Array<Id<'defectTypes'>> = []
+    for (const type of DEFECT_TYPES) {
+      const id = await ctx.db.insert('defectTypes', {
+        label: type.label,
+        value: type.value,
+        order: type.id,
+      })
+      typeIds.push(id)
+    }
+
+    const severityIds: Array<Id<'defectSeverities'>> = []
+    for (const severity of DEFECT_SEVERITIES) {
+      const id = await ctx.db.insert('defectSeverities', {
+        label: severity.label,
+        value: severity.value,
+        color: severity.color,
+        order: severity.id,
+      })
+      severityIds.push(id)
+    }
+
+    const priorityIds: Array<Id<'defectPriorities'>> = []
+    for (const priority of DEFECT_PRIORITIES) {
+      const id = await ctx.db.insert('defectPriorities', {
+        label: priority.label,
+        value: priority.value,
+        color: priority.color,
+        order: priority.id,
+      })
+      priorityIds.push(id)
+    }
+
+    const statusIds: Array<Id<'defectStatuses'>> = []
+    for (const status of DEFECT_STATUSES) {
+      const id = await ctx.db.insert('defectStatuses', {
+        label: status.label,
+        value: status.value,
+        order: status.id,
+      })
+      statusIds.push(id)
+    }
+
+    return {
+      types: typeIds.length,
+      severities: severityIds.length,
+      priorities: priorityIds.length,
+      statuses: statusIds.length,
+    }
+  },
+})
+
+export const getDefectTypes = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id('defectTypes'),
+      _creationTime: v.number(),
+      label: v.string(),
+      value: v.string(),
+      order: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const types = await ctx.db.query('defectTypes').collect()
+    return types.sort((a, b) => a.order - b.order)
+  },
+})
+
+export const getDefectSeverities = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id('defectSeverities'),
+      _creationTime: v.number(),
+      label: v.string(),
+      value: v.string(),
+      color: v.string(),
+      order: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const severities = await ctx.db.query('defectSeverities').collect()
+    return severities.sort((a, b) => a.order - b.order)
+  },
+})
+
+export const getDefectPriorities = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id('defectPriorities'),
+      _creationTime: v.number(),
+      label: v.string(),
+      value: v.string(),
+      color: v.string(),
+      order: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const priorities = await ctx.db.query('defectPriorities').collect()
+    return priorities.sort((a, b) => a.order - b.order)
+  },
+})
+
+export const getDefectStatuses = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id('defectStatuses'),
+      _creationTime: v.number(),
+      label: v.string(),
+      value: v.string(),
+      order: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const statuses = await ctx.db.query('defectStatuses').collect()
+    return statuses.sort((a, b) => a.order - b.order)
+  },
+})
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -89,10 +222,34 @@ export const listDefects = query({
       assignedToName: v.optional(v.string()),
       reporterId: v.id('users'),
       reporterName: v.string(),
-      types: defectTypesValidator,
-      severity: defectSeverityValidator,
-      priority: defectPriorityValidator,
-      status: defectStatusValidator,
+      types: v.array(
+        v.object({
+          _id: v.id('defectTypes'),
+          _creationTime: v.number(),
+          label: v.string(),
+          value: v.string(),
+        }),
+      ),
+      severity: v.object({
+        _id: v.id('defectSeverities'),
+        _creationTime: v.number(),
+        label: v.string(),
+        value: v.string(),
+        color: v.string(),
+      }),
+      priority: v.object({
+        _id: v.id('defectPriorities'),
+        _creationTime: v.number(),
+        label: v.string(),
+        value: v.string(),
+        color: v.string(),
+      }),
+      status: v.object({
+        _id: v.id('defectStatuses'),
+        _creationTime: v.number(),
+        label: v.string(),
+        value: v.string(),
+      }),
       comments: v.optional(
         v.array(
           v.object({
@@ -105,7 +262,12 @@ export const listDefects = query({
       statusHistory: v.optional(
         v.array(
           v.object({
-            status: defectStatusValidator,
+            status: v.object({
+              _id: v.id('defectStatuses'),
+              _creationTime: v.number(),
+              label: v.string(),
+              value: v.string(),
+            }),
             changedBy: v.id('users'),
             timestamp: v.number(),
           }),
@@ -119,36 +281,118 @@ export const listDefects = query({
       throw new Error('Unauthorized')
     }
 
+    const projects = await ctx.db.query('projects').collect()
+    const users = await ctx.db.query('users').collect()
     const defects = await ctx.db.query('defects').collect()
+    const allSeverities = await ctx.db.query('defectSeverities').collect()
+    const allPriorities = await ctx.db.query('defectPriorities').collect()
+    const allStatuses = await ctx.db.query('defectStatuses').collect()
+    const allTypes = await ctx.db.query('defectTypes').collect()
+
+    if (
+      allSeverities.length === 0 ||
+      allPriorities.length === 0 ||
+      allStatuses.length === 0 ||
+      allTypes.length === 0
+    ) {
+      return []
+    }
+
     const results = []
 
     for (const defect of defects) {
-      const project = await ctx.db.get(defect.projectId)
-      const reporter = await ctx.db.get(defect.reporterId)
-      const assignedTo = defect.assignedTo
-        ? await ctx.db.get(defect.assignedTo)
-        : null
+      const project = projects.find((p) => p._id === defect.projectId)
+      const reporter = users.find((u) => u._id === defect.reporterId)
+      const assignedTo = users.find((u) => u._id === defect.assignedTo)
+      const severity = allSeverities.find((s) => s._id === defect.severity)
+      const priority = allPriorities.find((p) => p._id === defect.priority)
+      const status = allStatuses.find((s) => s._id === defect.status)
+      const types = allTypes.filter((t) => defect.types.includes(t._id))
+
+      if (
+        !severity ||
+        !priority ||
+        !status ||
+        !project ||
+        !assignedTo ||
+        !assignedTo.name ||
+        !reporter ||
+        !reporter.name
+      ) {
+        continue
+      }
 
       results.push({
         _id: defect._id,
         _creationTime: defect._creationTime,
         projectId: defect.projectId,
-        projectName: project?.name ?? 'Unknown Project',
+        projectName: project.name,
         name: defect.name,
-        types: defect.types,
+        types: types.map((t) => ({
+          _id: t._id,
+          _creationTime: t._creationTime,
+          label: t.label,
+          value: t.value,
+        })),
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
-        assignedToName: assignedTo
-          ? assignedTo.name || assignedTo.email || 'Unknown User'
-          : undefined,
+        assignedToName: assignedTo.name,
         reporterId: defect.reporterId,
-        reporterName: reporter?.name || reporter?.email || 'Unknown Reporter',
-        severity: defect.severity,
-        priority: defect.priority,
-        status: defect.status,
+        reporterName: reporter.name,
+        severity: {
+          _id: severity._id,
+          _creationTime: severity._creationTime,
+          label: severity.label,
+          value: severity.value,
+          color: severity.color,
+        },
+        priority: {
+          _id: priority._id,
+          _creationTime: priority._creationTime,
+          label: priority.label,
+          value: priority.value,
+          color: priority.color,
+        },
+        status: {
+          _id: status._id,
+          _creationTime: status._creationTime,
+          label: status.label,
+          value: status.value,
+        },
         comments: defect.comments,
-        statusHistory: defect.statusHistory,
+        statusHistory: await Promise.all(
+          (defect.statusHistory ?? []).map((entry) => {
+            const statusEntry = allStatuses.find((s) => s._id === entry.status)
+
+            if (!statusEntry) {
+              return null
+            }
+
+            return {
+              status: {
+                _id: statusEntry._id,
+                _creationTime: statusEntry._creationTime,
+                label: statusEntry.label,
+                value: statusEntry.value,
+              },
+              changedBy: entry.changedBy,
+              timestamp: entry.timestamp,
+            }
+          }),
+        ).then(
+          (entries) =>
+            entries as Array<{
+              status: {
+                _id: Id<'defectStatuses'>
+                _creationTime: number
+                label: string
+                value: string
+              }
+              changedBy: Id<'users'>
+              timestamp: number
+            }>,
+        ),
         updatedAt: defect.updatedAt,
       })
     }
@@ -161,13 +405,13 @@ export const createDefect = mutation({
   args: {
     projectId: v.id('projects'),
     name: v.string(),
-    types: defectTypesValidator,
+    types: v.array(v.id('defectTypes')),
     description: v.string(),
     screenshot: v.optional(v.id('_storage')),
     assignedTo: v.id('users'),
-    severity: defectSeverityValidator,
-    priority: defectPriorityValidator,
-    status: defectStatusValidator,
+    severity: v.id('defectSeverities'),
+    priority: v.id('defectPriorities'),
+    status: v.id('defectStatuses'),
   },
   returns: v.id('defects'),
   handler: async (ctx, args) => {
@@ -183,7 +427,7 @@ export const createDefect = mutation({
     return await ctx.db.insert('defects', {
       projectId: args.projectId,
       name: args.name,
-      types: args.types ?? [],
+      types: args.types,
       description: args.description,
       screenshot: args.screenshot,
       assignedTo: args.assignedTo,
@@ -192,13 +436,7 @@ export const createDefect = mutation({
       priority: args.priority,
       status: args.status,
       comments: [],
-      statusHistory: [
-        {
-          status: args.status,
-          changedBy: reporterId,
-          timestamp: Date.now(),
-        },
-      ],
+      statusHistory: [],
     })
   },
 })
@@ -208,13 +446,13 @@ export const updateDefect = mutation({
     defectId: v.id('defects'),
     projectId: v.optional(v.id('projects')),
     name: v.optional(v.string()),
-    types: v.optional(defectTypesValidator),
+    types: v.optional(v.array(v.id('defectTypes'))),
     description: v.optional(v.string()),
     screenshot: v.optional(v.id('_storage')),
     assignedTo: v.optional(v.id('users')),
-    severity: v.optional(defectSeverityValidator),
-    priority: v.optional(defectPriorityValidator),
-    status: v.optional(defectStatusValidator),
+    severity: v.optional(v.id('defectSeverities')),
+    priority: v.optional(v.id('defectPriorities')),
+    status: v.optional(v.id('defectStatuses')),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -315,14 +553,34 @@ export const getDefect = query({
       _creationTime: v.number(),
       projectId: v.id('projects'),
       name: v.string(),
-      types: defectTypesValidator,
+      types: v.array(
+        v.object({
+          _id: v.id('defectTypes'),
+          label: v.string(),
+          value: v.string(),
+        }),
+      ),
       description: v.string(),
       screenshot: v.optional(v.id('_storage')),
       assignedTo: v.optional(v.id('users')),
       reporterId: v.id('users'),
-      severity: defectSeverityValidator,
-      priority: defectPriorityValidator,
-      status: defectStatusValidator,
+      severity: v.object({
+        _id: v.id('defectSeverities'),
+        label: v.string(),
+        value: v.string(),
+        color: v.string(),
+      }),
+      priority: v.object({
+        _id: v.id('defectPriorities'),
+        label: v.string(),
+        value: v.string(),
+        color: v.string(),
+      }),
+      status: v.object({
+        _id: v.id('defectStatuses'),
+        label: v.string(),
+        value: v.string(),
+      }),
       comments: v.optional(
         v.array(
           v.object({
@@ -335,7 +593,11 @@ export const getDefect = query({
       statusHistory: v.optional(
         v.array(
           v.object({
-            status: defectStatusValidator,
+            status: v.object({
+              _id: v.id('defectStatuses'),
+              label: v.string(),
+              value: v.string(),
+            }),
             changedBy: v.id('users'),
             timestamp: v.number(),
           }),
@@ -354,21 +616,76 @@ export const getDefect = query({
       return null
     }
 
+    const severity = await ctx.db.get(defect.severity)
+    const priority = await ctx.db.get(defect.priority)
+    const status = await ctx.db.get(defect.status)
+    const types = await Promise.all(
+      defect.types.map((typeId) => ctx.db.get(typeId)),
+    )
+
+    if (!severity || !priority || !status) {
+      return null
+    }
+
+    const resolvedTypes = types.filter(
+      (t): t is Doc<'defectTypes'> => t !== null,
+    )
+
     return {
       _id: defect._id,
       _creationTime: defect._creationTime,
       projectId: defect.projectId,
       name: defect.name,
-      types: defect.types,
+      types: resolvedTypes.map((t) => ({
+        _id: t._id,
+        label: t.label,
+        value: t.value,
+      })),
       description: defect.description,
       screenshot: defect.screenshot,
       assignedTo: defect.assignedTo,
       reporterId: defect.reporterId,
-      severity: defect.severity,
-      priority: defect.priority,
-      status: defect.status,
+      severity: {
+        _id: severity._id,
+        label: severity.label,
+        value: severity.value,
+        color: severity.color,
+      },
+      priority: {
+        _id: priority._id,
+        label: priority.label,
+        value: priority.value,
+        color: priority.color,
+      },
+      status: {
+        _id: status._id,
+        label: status.label,
+        value: status.value,
+      },
       comments: defect.comments,
-      statusHistory: defect.statusHistory,
+      statusHistory: await Promise.all(
+        (defect.statusHistory ?? []).map(async (entry) => {
+          const statusEntry = await ctx.db.get(entry.status)
+          return {
+            status: statusEntry
+              ? {
+                  _id: statusEntry._id,
+                  label: statusEntry.label,
+                  value: statusEntry.value,
+                }
+              : null,
+            changedBy: entry.changedBy,
+            timestamp: entry.timestamp,
+          }
+        }),
+      ).then(
+        (entries) =>
+          entries.filter((e) => e.status !== null) as Array<{
+            status: { _id: Id<'defectStatuses'>; label: string; value: string }
+            changedBy: Id<'users'>
+            timestamp: number
+          }>,
+      ),
       updatedAt: defect.updatedAt,
     }
   },
@@ -426,31 +743,5 @@ export const deleteDefect = mutation({
 
     await ctx.db.delete(args.defectId)
     return null
-  },
-})
-
-export const removeLegacyTypeField = mutation({
-  args: {},
-  returns: v.object({
-    processed: v.number(),
-    removed: v.number(),
-  }),
-  handler: async (ctx) => {
-    const defects = await ctx.db.query('defects').collect()
-    let processed = 0
-    let removed = 0
-
-    for (const defect of defects) {
-      processed++
-      // Check if the defect has the legacy 'type' field
-      if ('type' in defect && defect.type !== undefined) {
-        // Create a new object without the 'type' field and system fields, preserving all other fields
-        const { type, _id, _creationTime, ...defectWithoutType } = defect
-        await ctx.db.replace(defect._id, defectWithoutType)
-        removed++
-      }
-    }
-
-    return { processed, removed }
   },
 })
