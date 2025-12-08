@@ -40,7 +40,6 @@ export default defineSchema({
     severity: defectSeverityValidator,
     priority: defectPriorityValidator,
     types: defectTypesValidator,
-    type: v.optional(v.string()),
     status: defectStatusValidator,
     screenshot: v.optional(v.id('_storage')),
     comments: v.optional(
