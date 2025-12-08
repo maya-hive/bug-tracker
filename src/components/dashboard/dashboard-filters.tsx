@@ -1,6 +1,7 @@
 import { ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
+import { useQuery } from 'convex/react'
+import { api } from 'convex/_generated/api'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -46,6 +47,8 @@ export function DashboardFilters({
   users,
   onFiltersChange,
 }: DashboardFiltersProps) {
+  const defectTypes = useQuery(api.defects.getDefectTypes)
+  const defectSeverities = useQuery(api.defects.getDefectSeverities)
   const [assignedToOpen, setAssignedToOpen] = useState(false)
   const [reporterOpen, setReporterOpen] = useState(false)
   const hasActiveFilters =
@@ -101,14 +104,17 @@ export function DashboardFilters({
             severity: value === 'all' ? null : value,
           })
         }
+        disabled={!defectSeverities}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Severity" />
+          <SelectValue placeholder="Severity">
+            {defectSeverities?.find((s) => s._id === filters.severity)?.label}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
-          {DEFECT_SEVERITIES.map((severity) => (
-            <SelectItem key={severity.value} value={severity.value}>
+          {defectSeverities?.map((severity) => (
+            <SelectItem key={severity._id} value={severity._id}>
               {severity.label}
             </SelectItem>
           ))}
@@ -123,14 +129,17 @@ export function DashboardFilters({
             type: value === 'all' ? null : value,
           })
         }
+        disabled={!defectTypes}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Type" />
+          <SelectValue placeholder="Type">
+            {defectTypes?.find((t) => t._id === filters.type)?.label}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {DEFECT_TYPES.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
+          {defectTypes?.map((type) => (
+            <SelectItem key={type._id} value={type._id}>
               {type.label}
             </SelectItem>
           ))}

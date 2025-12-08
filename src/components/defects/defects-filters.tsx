@@ -1,13 +1,8 @@
 import { ChevronsUpDown, LayoutGrid, RotateCcw, Table } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useDebouncedCallback } from '@tanstack/react-pacer'
-import {
-  DEFECT_PRIORITIES,
-  DEFECT_SEVERITIES,
-  DEFECT_STATUSES,
-  DEFECT_TYPES,
-} from 'convex/defects'
-import type { DefectStatus } from 'convex/defects'
+import { useQuery } from 'convex/react'
+import { api } from 'convex/_generated/api'
 import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import {
@@ -66,6 +61,10 @@ export function DefectsFilters({
   viewMode,
   setViewMode,
 }: DefectsFiltersProps) {
+  const defectTypes = useQuery(api.defects.getDefectTypes)
+  const defectSeverities = useQuery(api.defects.getDefectSeverities)
+  const defectPriorities = useQuery(api.defects.getDefectPriorities)
+  const defectStatuses = useQuery(api.defects.getDefectStatuses)
   const [assignedToOpen, setAssignedToOpen] = useState(false)
   const [searchInput, setSearchInput] = useState(filters.search || '')
 
@@ -138,14 +137,17 @@ export function DefectsFilters({
               severity: value === 'all' ? null : value,
             })
           }
+          disabled={!defectSeverities}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Severity" />
+            <SelectValue placeholder="Severity">
+              {defectSeverities?.find((s) => s._id === filters.severity)?.label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Severities</SelectItem>
-            {DEFECT_SEVERITIES.map((severity) => (
-              <SelectItem key={severity.value} value={severity.value}>
+            {defectSeverities?.map((severity) => (
+              <SelectItem key={severity._id} value={severity._id}>
                 {severity.label}
               </SelectItem>
             ))}
@@ -160,14 +162,17 @@ export function DefectsFilters({
               type: value === 'all' ? null : value,
             })
           }
+          disabled={!defectTypes}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Type" />
+            <SelectValue placeholder="Type">
+              {defectTypes?.find((t) => t._id === filters.type)?.label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            {DEFECT_TYPES.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
+            {defectTypes?.map((type) => (
+              <SelectItem key={type._id} value={type._id}>
                 {type.label}
               </SelectItem>
             ))}
@@ -182,14 +187,17 @@ export function DefectsFilters({
               priority: value === 'all' ? null : value,
             })
           }
+          disabled={!defectPriorities}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder="Priority">
+              {defectPriorities?.find((p) => p._id === filters.priority)?.label}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priorities</SelectItem>
-            {DEFECT_PRIORITIES.map((priority) => (
-              <SelectItem key={priority.value} value={priority.value}>
+            {defectPriorities?.map((priority) => (
+              <SelectItem key={priority._id} value={priority._id}>
                 {priority.label}
               </SelectItem>
             ))}
@@ -204,24 +212,27 @@ export function DefectsFilters({
               status: value === 'all' ? null : value,
             })
           }
+          disabled={!defectStatuses}
         >
           <SelectTrigger>
             <div className="flex items-center gap-2">
               {filters.status ? (
                 <>
                   {(() => {
-                    const StatusIcon = getStatusIcon(
-                      filters.status as DefectStatus,
+                    const statusObj = defectStatuses?.find(
+                      (s) => s._id === filters.status,
                     )
+                    if (!statusObj) return null
+                    const StatusIcon = getStatusIcon(statusObj.value as any)
                     const statusIconColor = getStatusIconColor(
-                      filters.status as DefectStatus,
+                      statusObj.value as any,
                     )
                     return (
                       <StatusIcon className={cn('size-4', statusIconColor)} />
                     )
                   })()}
                   <SelectValue>
-                    {getStatusLabel(filters.status as DefectStatus)}
+                    {defectStatuses?.find((s) => s._id === filters.status)?.label}
                   </SelectValue>
                 </>
               ) : (
@@ -231,11 +242,11 @@ export function DefectsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            {DEFECT_STATUSES.map((status) => {
-              const StatusIcon = getStatusIcon(status.value)
-              const statusIconColor = getStatusIconColor(status.value)
+            {defectStatuses?.map((status) => {
+              const StatusIcon = getStatusIcon(status.value as any)
+              const statusIconColor = getStatusIconColor(status.value as any)
               return (
-                <SelectItem key={status.value} value={status.value}>
+                <SelectItem key={status._id} value={status._id}>
                   <div className="flex items-center gap-2">
                     <StatusIcon className={cn('size-4', statusIconColor)} />
                     <span>{status.label}</span>

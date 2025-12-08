@@ -1,12 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { authTables } from '@convex-dev/auth/server'
-import {
-  defectPriorityValidator,
-  defectSeverityValidator,
-  defectStatusValidator,
-  defectTypesValidator,
-} from './defects'
 
 export default defineSchema({
   ...authTables,
@@ -31,16 +25,38 @@ export default defineSchema({
   projects: defineTable({
     name: v.string(),
   }),
+  defectTypes: defineTable({
+    label: v.string(),
+    value: v.string(),
+    order: v.number(),
+  }),
+  defectSeverities: defineTable({
+    label: v.string(),
+    value: v.string(),
+    color: v.string(),
+    order: v.number(),
+  }),
+  defectPriorities: defineTable({
+    label: v.string(),
+    value: v.string(),
+    color: v.string(),
+    order: v.number(),
+  }),
+  defectStatuses: defineTable({
+    label: v.string(),
+    value: v.string(),
+    order: v.number(),
+  }),
   defects: defineTable({
     projectId: v.id('projects'),
     name: v.string(),
     description: v.string(),
     assignedTo: v.id('users'),
     reporterId: v.id('users'),
-    severity: defectSeverityValidator,
-    priority: defectPriorityValidator,
-    types: defectTypesValidator,
-    status: defectStatusValidator,
+    severity: v.id('defectSeverities'),
+    priority: v.id('defectPriorities'),
+    types: v.array(v.id('defectTypes')),
+    status: v.id('defectStatuses'),
     screenshot: v.optional(v.id('_storage')),
     comments: v.optional(
       v.array(
@@ -54,7 +70,7 @@ export default defineSchema({
     statusHistory: v.optional(
       v.array(
         v.object({
-          status: defectStatusValidator,
+          status: v.id('defectStatuses'),
           changedBy: v.id('users'),
           timestamp: v.number(),
         }),
