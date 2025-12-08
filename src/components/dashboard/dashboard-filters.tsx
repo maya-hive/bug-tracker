@@ -27,7 +27,7 @@ import { cn } from '~/lib/utils'
 
 export interface DashboardFilters {
   severity: string | null
-  type: string | null
+  types: Array<string>
   assignedTo: string | null
   reporter: string | null
 }
@@ -53,14 +53,14 @@ export function DashboardFilters({
   const [reporterOpen, setReporterOpen] = useState(false)
   const hasActiveFilters =
     filters.severity !== null ||
-    filters.type !== null ||
+    filters.types.length > 0 ||
     filters.assignedTo !== null ||
     filters.reporter !== null
 
   const clearFilters = () => {
     onFiltersChange({
       severity: null,
-      type: null,
+      types: [],
       assignedTo: null,
       reporter: null,
     })
@@ -70,19 +70,12 @@ export function DashboardFilters({
     (user) => user._id === filters.assignedTo,
   )
   const assignedToDisplayValue =
-    filters.assignedTo === null
-      ? 'All Assignees'
-      : selectedAssignedToUser?.name ||
-        selectedAssignedToUser?.email ||
-        'Unknown'
-
+    filters.assignedTo === null ? 'All Assignees' : selectedAssignedToUser?.name
   const selectedReporterUser = users?.find(
     (user) => user._id === filters.reporter,
   )
   const reporterDisplayValue =
-    filters.reporter === null
-      ? 'All Reporters'
-      : selectedReporterUser?.name || selectedReporterUser?.email || 'Unknown'
+    filters.reporter === null ? 'All Reporters' : selectedReporterUser?.name
 
   return (
     <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
@@ -107,9 +100,7 @@ export function DashboardFilters({
         disabled={!defectSeverities}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Severity">
-            {defectSeverities?.find((s) => s._id === filters.severity)?.label}
-          </SelectValue>
+          <SelectValue placeholder="Severity" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Severities</SelectItem>
@@ -122,19 +113,17 @@ export function DashboardFilters({
       </Select>
 
       <Select
-        value={filters.type || 'all'}
+        value={filters.types.length > 0 ? filters.types[0] : 'all'}
         onValueChange={(value) =>
           onFiltersChange({
             ...filters,
-            type: value === 'all' ? null : value,
+            types: value === 'all' ? [] : [value],
           })
         }
         disabled={!defectTypes}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Type">
-            {defectTypes?.find((t) => t._id === filters.type)?.label}
-          </SelectValue>
+          <SelectValue placeholder="Type" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>

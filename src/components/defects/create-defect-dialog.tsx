@@ -6,10 +6,8 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import type { Id } from 'convex/_generated/dataModel'
-import {
-  defaultDefectFormValues,
-  defectFormSchema,
-} from '~/components/defects/defect-form.types'
+import type { DefectFormInput } from '~/components/defects/defect-form.types'
+import { defectFormSchema } from '~/components/defects/defect-form.types'
 import {
   Dialog,
   DialogContent,
@@ -78,10 +76,15 @@ export function CreateDefectDialog({
 
   const form = useForm({
     defaultValues: {
-      ...defaultDefectFormValues,
+      name: '',
+      types: [],
+      description: '',
+      assignedTo: '',
+      severity: '',
+      priority: '',
       projectId: selectedProject ?? '',
       status: defectStatuses?.[0]?._id ?? '',
-    },
+    } as DefectFormInput,
     validators: {
       onSubmit: defectFormSchema,
     },
@@ -396,9 +399,6 @@ export function CreateDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedSeverity = defectSeverities?.find(
-                      (s) => s._id === field.state.value,
-                    )
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Severity</FieldLabel>
@@ -412,9 +412,7 @@ export function CreateDefectDialog({
                             className="w-full"
                             aria-invalid={isInvalid}
                           >
-                            <SelectValue placeholder="Select severity">
-                              {selectedSeverity?.label}
-                            </SelectValue>
+                            <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                           <SelectContent>
                             {defectSeverities?.map((severity) => (
@@ -439,9 +437,6 @@ export function CreateDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedPriority = defectPriorities?.find(
-                      (p) => p._id === field.state.value,
-                    )
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Priority</FieldLabel>
@@ -455,9 +450,7 @@ export function CreateDefectDialog({
                             className="w-full"
                             aria-invalid={isInvalid}
                           >
-                            <SelectValue placeholder="Select priority">
-                              {selectedPriority?.label}
-                            </SelectValue>
+                            <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                           <SelectContent>
                             {defectPriorities?.map((priority) => (

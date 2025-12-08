@@ -28,7 +28,7 @@ function Dashboard() {
 
   const [filters, setFilters] = useState<DashboardFiltersType>({
     severity: null,
-    type: null,
+    types: [],
     assignedTo: null,
     reporter: null,
   })
@@ -64,13 +64,15 @@ function Dashboard() {
           return false
         }
 
-        if (filters.severity !== null && defect.severity._id !== filters.severity) {
+        if (
+          filters.severity !== null &&
+          defect.severity._id !== filters.severity
+        ) {
           return false
         }
 
-        if (filters.type !== null) {
-          const defectTypes = defect.types || []
-          if (!defectTypes.some((t) => t._id === filters.type)) {
+        if (filters.types.length > 0) {
+          if (!defect.types.some((t) => filters.types.includes(t._id))) {
             return false
           }
         }
@@ -95,13 +97,14 @@ function Dashboard() {
   const metrics = useMemo(() => {
     const totalBugs = defectsData.length
     const openBugs = defectsData.filter(
-      (defect) => defect.status.value === 'open' || defect.status.value === 'reopened',
+      (defect) =>
+        defect.status.value === 'open' || defect.status.value === 'reopened',
     ).length
     const criticalBugs = defectsData.filter(
       (defect) => defect.severity.value === 'critical',
     ).length
     const unitTestFailures = defectsData.filter((defect) =>
-      (defect.types || []).some((t) => t.value === 'unit test failure'),
+      defect.types.some((t) => t.value === 'unit test failure'),
     ).length
 
     return {

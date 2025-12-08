@@ -73,7 +73,7 @@ function Defects() {
   const [filters, setFilters] = useState<DefectsFiltersType>({
     search: defectIdParam || null,
     severity: null,
-    type: null,
+    types: [],
     priority: null,
     status: null,
     assignedTo: null,
@@ -167,18 +167,23 @@ function Defects() {
           }
         }
 
-        if (filters.severity !== null && defect.severity._id !== filters.severity) {
+        if (
+          filters.severity !== null &&
+          defect.severity._id !== filters.severity
+        ) {
           return false
         }
 
-        if (filters.type !== null) {
-          const defectTypes = defect.types || []
-          if (!defectTypes.some((t) => t._id === filters.type)) {
+        if (filters.types.length > 0) {
+          if (!defect.types.some((t) => filters.types.includes(t._id))) {
             return false
           }
         }
 
-        if (filters.priority !== null && defect.priority._id !== filters.priority) {
+        if (
+          filters.priority !== null &&
+          defect.priority._id !== filters.priority
+        ) {
           return false
         }
 

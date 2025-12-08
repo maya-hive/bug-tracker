@@ -3,7 +3,6 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
-// Constants for seeding and frontend reference (keeping for backward compatibility)
 export const DEFECT_TYPES = [
   { id: 1, label: 'Functional', value: 'functional' },
   { id: 2, label: 'UI and Usability', value: 'ui and usability' },
@@ -36,14 +35,12 @@ export const DEFECT_STATUSES = [
   { id: 7, label: 'Hold', value: 'hold' },
 ] as const
 
-// Types for frontend compatibility
 export type DefectType = (typeof DEFECT_TYPES)[number]['value']
 export type DefectSeverity = (typeof DEFECT_SEVERITIES)[number]['value']
 export type DefectPriority = (typeof DEFECT_PRIORITIES)[number]['value']
 export type DefectStatus = (typeof DEFECT_STATUSES)[number]['value']
 
-// Seed mutation to populate reference tables
-export const seedReferenceData = mutation({
+export const seedDefectOptionsData = mutation({
   args: {},
   returns: v.object({
     types: v.number(),
@@ -52,18 +49,25 @@ export const seedReferenceData = mutation({
     statuses: v.number(),
   }),
   handler: async (ctx) => {
-    // Check if already seeded
-    const existingTypes = await ctx.db.query('defectTypes').collect()
-    if (existingTypes.length > 0) {
+    const types = await ctx.db.query('defectTypes').collect()
+    const severities = await ctx.db.query('defectSeverities').collect()
+    const priorities = await ctx.db.query('defectPriorities').collect()
+    const statuses = await ctx.db.query('defectStatuses').collect()
+
+    if (
+      types.length > 0 ||
+      severities.length > 0 ||
+      priorities.length > 0 ||
+      statuses.length > 0
+    ) {
       return {
-        types: existingTypes.length,
-        severities: (await ctx.db.query('defectSeverities').collect()).length,
-        priorities: (await ctx.db.query('defectPriorities').collect()).length,
-        statuses: (await ctx.db.query('defectStatuses').collect()).length,
+        types: types.length,
+        severities: severities.length,
+        priorities: priorities.length,
+        statuses: statuses.length,
       }
     }
 
-    // Seed defect types
     const typeIds: Array<Id<'defectTypes'>> = []
     for (const type of DEFECT_TYPES) {
       const id = await ctx.db.insert('defectTypes', {
@@ -74,7 +78,6 @@ export const seedReferenceData = mutation({
       typeIds.push(id)
     }
 
-    // Seed defect severities
     const severityIds: Array<Id<'defectSeverities'>> = []
     for (const severity of DEFECT_SEVERITIES) {
       const id = await ctx.db.insert('defectSeverities', {
@@ -86,7 +89,6 @@ export const seedReferenceData = mutation({
       severityIds.push(id)
     }
 
-    // Seed defect priorities
     const priorityIds: Array<Id<'defectPriorities'>> = []
     for (const priority of DEFECT_PRIORITIES) {
       const id = await ctx.db.insert('defectPriorities', {
@@ -98,7 +100,6 @@ export const seedReferenceData = mutation({
       priorityIds.push(id)
     }
 
-    // Seed defect statuses
     const statusIds: Array<Id<'defectStatuses'>> = []
     for (const status of DEFECT_STATUSES) {
       const id = await ctx.db.insert('defectStatuses', {
@@ -118,7 +119,6 @@ export const seedReferenceData = mutation({
   },
 })
 
-// Queries to get reference data
 export const getDefectTypes = query({
   args: {},
   returns: v.array(
@@ -281,39 +281,54 @@ export const listDefects = query({
       throw new Error('Unauthorized')
     }
 
+    const projects = await ctx.db.query('projects').collect()
+    const users = await ctx.db.query('users').collect()
     const defects = await ctx.db.query('defects').collect()
+    const allSeverities = await ctx.db.query('defectSeverities').collect()
+    const allPriorities = await ctx.db.query('defectPriorities').collect()
+    const allStatuses = await ctx.db.query('defectStatuses').collect()
+    const allTypes = await ctx.db.query('defectTypes').collect()
+
+    if (
+      allSeverities.length === 0 ||
+      allPriorities.length === 0 ||
+      allStatuses.length === 0 ||
+      allTypes.length === 0
+    ) {
+      return []
+    }
+
     const results = []
 
     for (const defect of defects) {
-      const project = await ctx.db.get(defect.projectId)
-      const reporter = await ctx.db.get(defect.reporterId)
-      const assignedTo = defect.assignedTo
-        ? await ctx.db.get(defect.assignedTo)
-        : null
+      const project = projects.find((p) => p._id === defect.projectId)
+      const reporter = users.find((u) => u._id === defect.reporterId)
+      const assignedTo = users.find((u) => u._id === defect.assignedTo)
+      const severity = allSeverities.find((s) => s._id === defect.severity)
+      const priority = allPriorities.find((p) => p._id === defect.priority)
+      const status = allStatuses.find((s) => s._id === defect.status)
+      const types = allTypes.filter((t) => defect.types.includes(t._id))
 
-      // Resolve reference data
-      const severity = await ctx.db.get(defect.severity)
-      const priority = await ctx.db.get(defect.priority)
-      const status = await ctx.db.get(defect.status)
-      const types = await Promise.all(
-        defect.types.map((typeId) => ctx.db.get(typeId)),
-      )
-
-      if (!severity || !priority || !status) {
-        continue // Skip if reference data is missing
+      if (
+        !severity ||
+        !priority ||
+        !status ||
+        !project ||
+        !assignedTo ||
+        !assignedTo.name ||
+        !reporter ||
+        !reporter.name
+      ) {
+        continue
       }
-
-      const resolvedTypes = types.filter(
-        (t): t is Doc<'defectTypes'> => t !== null,
-      )
 
       results.push({
         _id: defect._id,
         _creationTime: defect._creationTime,
         projectId: defect.projectId,
-        projectName: project?.name ?? 'Unknown Project',
+        projectName: project.name,
         name: defect.name,
-        types: resolvedTypes.map((t) => ({
+        types: types.map((t) => ({
           _id: t._id,
           _creationTime: t._creationTime,
           label: t.label,
@@ -322,11 +337,9 @@ export const listDefects = query({
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
-        assignedToName: assignedTo
-          ? assignedTo.name || assignedTo.email || 'Unknown User'
-          : undefined,
+        assignedToName: assignedTo.name,
         reporterId: defect.reporterId,
-        reporterName: reporter?.name || reporter?.email || 'Unknown Reporter',
+        reporterName: reporter.name,
         severity: {
           _id: severity._id,
           _creationTime: severity._creationTime,
@@ -349,24 +362,27 @@ export const listDefects = query({
         },
         comments: defect.comments,
         statusHistory: await Promise.all(
-          (defect.statusHistory ?? []).map(async (entry) => {
-            const statusEntry = await ctx.db.get(entry.status)
+          (defect.statusHistory ?? []).map((entry) => {
+            const statusEntry = allStatuses.find((s) => s._id === entry.status)
+
+            if (!statusEntry) {
+              return null
+            }
+
             return {
-              status: statusEntry
-                ? {
-                    _id: statusEntry._id,
-                    _creationTime: statusEntry._creationTime,
-                    label: statusEntry.label,
-                    value: statusEntry.value,
-                  }
-                : null,
+              status: {
+                _id: statusEntry._id,
+                _creationTime: statusEntry._creationTime,
+                label: statusEntry.label,
+                value: statusEntry.value,
+              },
               changedBy: entry.changedBy,
               timestamp: entry.timestamp,
             }
           }),
         ).then(
           (entries) =>
-            entries.filter((e) => e.status !== null) as Array<{
+            entries as Array<{
               status: {
                 _id: Id<'defectStatuses'>
                 _creationTime: number
@@ -420,13 +436,7 @@ export const createDefect = mutation({
       priority: args.priority,
       status: args.status,
       comments: [],
-      statusHistory: [
-        {
-          status: args.status,
-          changedBy: reporterId,
-          timestamp: Date.now(),
-        },
-      ],
+      statusHistory: [],
     })
   },
 })
@@ -606,7 +616,6 @@ export const getDefect = query({
       return null
     }
 
-    // Resolve reference data
     const severity = await ctx.db.get(defect.severity)
     const priority = await ctx.db.get(defect.priority)
     const status = await ctx.db.get(defect.status)

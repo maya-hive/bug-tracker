@@ -28,7 +28,6 @@ import {
 import {
   getStatusIcon,
   getStatusIconColor,
-  getStatusLabel,
 } from '~/components/defects/defect-status'
 import { cn } from '~/lib/utils'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
@@ -36,7 +35,7 @@ import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
 export interface DefectsFilters {
   search: string | null
   severity: string | null
-  type: string | null
+  types: Array<string>
   priority: string | null
   status: string | null
   assignedTo: string | null
@@ -90,7 +89,7 @@ export function DefectsFilters({
   const hasActiveFilters =
     (filters.search !== null && filters.search.trim() !== '') ||
     filters.severity !== null ||
-    filters.type !== null ||
+    filters.types.length > 0 ||
     filters.priority !== null ||
     filters.status !== null ||
     filters.assignedTo !== null
@@ -99,7 +98,7 @@ export function DefectsFilters({
     onFiltersChange({
       search: null,
       severity: null,
-      type: null,
+      types: [],
       priority: null,
       status: null,
       assignedTo: null,
@@ -109,12 +108,9 @@ export function DefectsFilters({
   const selectedAssignedToUser = users?.find(
     (user) => user._id === filters.assignedTo,
   )
-  const assignedToDisplayValue =
-    filters.assignedTo === null
-      ? 'All Assignees'
-      : selectedAssignedToUser?.name ||
-        selectedAssignedToUser?.email ||
-        'Unknown'
+  const assignedToDisplayValue = !filters.assignedTo
+    ? 'All Assignees'
+    : selectedAssignedToUser?.name
 
   return (
     <div className="flex flex-wrap items-center gap-3 justify-between">
@@ -140,9 +136,7 @@ export function DefectsFilters({
           disabled={!defectSeverities}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Severity">
-              {defectSeverities?.find((s) => s._id === filters.severity)?.label}
-            </SelectValue>
+            <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Severities</SelectItem>
@@ -155,19 +149,17 @@ export function DefectsFilters({
         </Select>
 
         <Select
-          value={filters.type || 'all'}
+          value={filters.types.length > 0 ? filters.types[0] : 'all'}
           onValueChange={(value) =>
             onFiltersChange({
               ...filters,
-              type: value === 'all' ? null : value,
+              types: value === 'all' ? [] : [value],
             })
           }
           disabled={!defectTypes}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Type">
-              {defectTypes?.find((t) => t._id === filters.type)?.label}
-            </SelectValue>
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
@@ -190,9 +182,7 @@ export function DefectsFilters({
           disabled={!defectPriorities}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Priority">
-              {defectPriorities?.find((p) => p._id === filters.priority)?.label}
-            </SelectValue>
+            <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priorities</SelectItem>
@@ -231,9 +221,7 @@ export function DefectsFilters({
                       <StatusIcon className={cn('size-4', statusIconColor)} />
                     )
                   })()}
-                  <SelectValue>
-                    {defectStatuses?.find((s) => s._id === filters.status)?.label}
-                  </SelectValue>
+                  <SelectValue />
                 </>
               ) : (
                 <SelectValue placeholder="Status" />

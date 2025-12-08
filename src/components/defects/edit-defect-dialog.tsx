@@ -7,6 +7,7 @@ import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectTableItem } from './defects-table.types'
+import type { DefectFormInput } from '~/components/defects/defect-form.types'
 import { defectFormSchema } from '~/components/defects/defect-form.types'
 import {
   Dialog,
@@ -90,7 +91,7 @@ export function EditDefectDialog({
       severity: defect?.severity._id,
       priority: defect?.priority._id,
       status: defect?.status._id,
-    },
+    } as DefectFormInput,
     validators: {
       onSubmit: defectFormSchema,
     },
@@ -105,8 +106,8 @@ export function EditDefectDialog({
           defectId: defect._id as Id<'defects'>,
           projectId: validated.projectId as Id<'projects'>,
           name: validated.name,
-          types: validated.types as Array<Id<'defectTypes'>>,
           description: validated.description,
+          types: validated.types as Array<Id<'defectTypes'>>,
           assignedTo: validated.assignedTo as Id<'users'>,
           severity: validated.severity as Id<'defectSeverities'>,
           priority: validated.priority as Id<'defectPriorities'>,
@@ -132,7 +133,7 @@ export function EditDefectDialog({
       form.reset({
         projectId: String(defect.projectId),
         name: defect.name,
-        types: (defect.types || []).map((t) => t._id),
+        types: defect.types.map((t) => t._id),
         description: defect.description,
         assignedTo: String(defect.assignedTo || ''),
         severity: defect.severity._id,
@@ -422,9 +423,6 @@ export function EditDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedSeverity = defectSeverities?.find(
-                      (s) => s._id === field.state.value,
-                    )
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Severity</FieldLabel>
@@ -438,9 +436,7 @@ export function EditDefectDialog({
                             className="w-full"
                             aria-invalid={isInvalid}
                           >
-                            <SelectValue placeholder="Select severity">
-                              {selectedSeverity?.label}
-                            </SelectValue>
+                            <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                           <SelectContent>
                             {defectSeverities?.map((severity) => (
@@ -465,9 +461,6 @@ export function EditDefectDialog({
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
-                    const selectedPriority = defectPriorities?.find(
-                      (p) => p._id === field.state.value,
-                    )
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Priority</FieldLabel>
@@ -481,9 +474,7 @@ export function EditDefectDialog({
                             className="w-full"
                             aria-invalid={isInvalid}
                           >
-                            <SelectValue placeholder="Select priority">
-                              {selectedPriority?.label}
-                            </SelectValue>
+                            <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                           <SelectContent>
                             {defectPriorities?.map((priority) => (
