@@ -28,6 +28,14 @@ Install dependencies:
 bun install
 ```
 
+Configure application keys:
+
+```bash
+bun --bun generateKeys.mjs
+```
+
+Copy the whole output and paste it into your Convex dashboard deployment's Environment Variables page.
+
 Run development server:
 
 ```bash
