@@ -428,3 +428,29 @@ export const deleteDefect = mutation({
     return null
   },
 })
+
+export const removeLegacyTypeField = mutation({
+  args: {},
+  returns: v.object({
+    processed: v.number(),
+    removed: v.number(),
+  }),
+  handler: async (ctx) => {
+    const defects = await ctx.db.query('defects').collect()
+    let processed = 0
+    let removed = 0
+
+    for (const defect of defects) {
+      processed++
+      // Check if the defect has the legacy 'type' field
+      if ('type' in defect && defect.type !== undefined) {
+        // Create a new object without the 'type' field and system fields, preserving all other fields
+        const { type, _id, _creationTime, ...defectWithoutType } = defect
+        await ctx.db.replace(defect._id, defectWithoutType)
+        removed++
+      }
+    }
+
+    return { processed, removed }
+  },
+})
