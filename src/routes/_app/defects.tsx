@@ -10,6 +10,7 @@ import type { Role } from 'convex/lib/permissions'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectsFilters as DefectsFiltersType } from '~/components/defects/defects-filters'
+import type { DefectType } from 'convex/defects'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDefectsColumns } from '~/components/defects/defects-table-columns'
 import { EditDefectDialog } from '~/components/defects/edit-defect-dialog'
@@ -135,7 +136,7 @@ function Defects() {
         projectId: defect.projectId,
         projectName: defect.projectName,
         name: defect.name,
-        type: defect.type,
+        types: defect.types,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -171,8 +172,11 @@ function Defects() {
           return false
         }
 
-        if (filters.type !== null && defect.type !== filters.type) {
-          return false
+        if (filters.type !== null) {
+          const defectTypes = defect.types || []
+          if (!defectTypes.includes(filters.type as DefectType)) {
+            return false
+          }
         }
 
         if (filters.priority !== null && defect.priority !== filters.priority) {

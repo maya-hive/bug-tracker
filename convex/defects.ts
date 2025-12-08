@@ -35,8 +35,12 @@ export const DEFECT_STATUSES = [
   { id: 7, label: 'Hold', value: 'hold' },
 ] as const
 
-export const defectTypeValidator = v.union(
-  ...DEFECT_TYPES.map(({ value }) => v.literal(value)),
+export const defectTypesValidator = v.optional(
+  v.array(v.union(...DEFECT_TYPES.map(({ value }) => v.literal(value)))),
+)
+
+export const defectTypeValidator = v.optional(
+  v.union(...DEFECT_TYPES.map(({ value }) => v.literal(value))),
 )
 
 export const defectSeverityValidator = v.union(
@@ -89,7 +93,7 @@ export const listDefects = query({
       assignedToName: v.optional(v.string()),
       reporterId: v.id('users'),
       reporterName: v.string(),
-      type: defectTypeValidator,
+      types: defectTypesValidator,
       severity: defectSeverityValidator,
       priority: defectPriorityValidator,
       status: defectStatusValidator,
@@ -135,7 +139,7 @@ export const listDefects = query({
         projectId: defect.projectId,
         projectName: project?.name ?? 'Unknown Project',
         name: defect.name,
-        type: defect.type,
+        types: defect.types,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -161,7 +165,7 @@ export const createDefect = mutation({
   args: {
     projectId: v.id('projects'),
     name: v.string(),
-    type: defectTypeValidator,
+    types: defectTypesValidator,
     description: v.string(),
     screenshot: v.optional(v.id('_storage')),
     assignedTo: v.id('users'),
@@ -183,7 +187,7 @@ export const createDefect = mutation({
     return await ctx.db.insert('defects', {
       projectId: args.projectId,
       name: args.name,
-      type: args.type,
+      types: args.types ?? [],
       description: args.description,
       screenshot: args.screenshot,
       assignedTo: args.assignedTo,
@@ -208,7 +212,7 @@ export const updateDefect = mutation({
     defectId: v.id('defects'),
     projectId: v.optional(v.id('projects')),
     name: v.optional(v.string()),
-    type: v.optional(defectTypeValidator),
+    types: v.optional(defectTypesValidator),
     description: v.optional(v.string()),
     screenshot: v.optional(v.id('_storage')),
     assignedTo: v.optional(v.id('users')),
@@ -232,7 +236,7 @@ export const updateDefect = mutation({
         Doc<'defects'>,
         | 'projectId'
         | 'name'
-        | 'type'
+        | 'types'
         | 'description'
         | 'screenshot'
         | 'assignedTo'
@@ -252,8 +256,8 @@ export const updateDefect = mutation({
       updates.name = args.name
     }
 
-    if (args.type !== undefined) {
-      updates.type = args.type
+    if (args.types !== undefined) {
+      updates.types = args.types
     }
 
     if (args.description !== undefined) {
@@ -315,7 +319,7 @@ export const getDefect = query({
       _creationTime: v.number(),
       projectId: v.id('projects'),
       name: v.string(),
-      type: defectTypeValidator,
+      types: defectTypesValidator,
       description: v.string(),
       screenshot: v.optional(v.id('_storage')),
       assignedTo: v.optional(v.id('users')),
@@ -359,7 +363,7 @@ export const getDefect = query({
       _creationTime: defect._creationTime,
       projectId: defect.projectId,
       name: defect.name,
-      type: defect.type,
+      types: defect.types,
       description: defect.description,
       screenshot: defect.screenshot,
       assignedTo: defect.assignedTo,
@@ -426,5 +430,42 @@ export const deleteDefect = mutation({
 
     await ctx.db.delete(args.defectId)
     return null
+  },
+})
+
+export const migrateTypeToTypes = mutation({
+  args: {},
+  returns: v.object({
+    totalDefects: v.number(),
+    migratedCount: v.number(),
+    skippedCount: v.number(),
+  }),
+  handler: async (ctx) => {
+    const defects = await ctx.db.query('defects').collect()
+    let migratedCount = 0
+    let skippedCount = 0
+
+    for (const defect of defects) {
+      // Check if defect has a type field but types is empty/null
+      const oldType = defect.type
+      const existingTypes = defect.types
+
+      // Migrate if there's an old type value and types array is empty or undefined
+      if (oldType && (!existingTypes || existingTypes.length === 0)) {
+        // Migrate: copy type to types array
+        await ctx.db.patch(defect._id, {
+          types: [oldType],
+        })
+        migratedCount++
+      } else {
+        skippedCount++
+      }
+    }
+
+    return {
+      totalDefects: defects.length,
+      migratedCount,
+      skippedCount,
+    }
   },
 })

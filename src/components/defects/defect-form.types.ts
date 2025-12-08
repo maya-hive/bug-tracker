@@ -41,28 +41,31 @@ export const defectFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().min(1, 'Description is required'),
   assignedTo: z.string().min(1, 'Assigned To is required'),
-  type: z
-    .string()
-    .min(1, 'Type is required')
-    .refine((val) => defectTypeValues.includes(val as DefectType), {
-      message: 'Invalid type',
+  types: z
+    .array(z.enum(defectTypeValues))
+    .min(1, 'At least one type is required')
+    .refine((val) => val.every((type) => defectTypeValues.includes(type)), {
+      message: 'Invalid type in types array',
     }),
   severity: z
-    .string()
-    .min(1, 'Severity is required')
-    .refine((val) => defectSeverityValues.includes(val as DefectSeverity), {
+    .enum(defectSeverityValues, {
+      message: 'Severity is required',
+    })
+    .refine((val) => defectSeverityValues.includes(val), {
       message: 'Invalid severity',
     }),
   priority: z
-    .string()
-    .min(1, 'Priority is required')
-    .refine((val) => defectPriorityValues.includes(val as DefectPriority), {
+    .enum(defectPriorityValues, {
+      message: 'Priority is required',
+    })
+    .refine((val) => defectPriorityValues.includes(val), {
       message: 'Invalid priority',
     }),
   status: z
-    .string()
-    .min(1, 'Status is required')
-    .refine((val) => defectStatusValues.includes(val as DefectStatus), {
+    .enum(defectStatusValues, {
+      message: 'Status is required',
+    })
+    .refine((val) => defectStatusValues.includes(val), {
       message: 'Invalid status',
     }),
 })
@@ -76,7 +79,7 @@ export type DefectFormInput = {
   name: string
   description: string
   assignedTo: string
-  type: string
+  types: Array<DefectType>
   severity: string
   priority: string
   status: string
@@ -96,7 +99,7 @@ export type DefectFormValues = z.output<typeof defectFormSchema>
 export const defaultDefectFormValues: DefectFormInput = {
   projectId: '',
   name: '',
-  type: '',
+  types: [],
   description: '',
   assignedTo: '',
   severity: '',

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from 'convex/_generated/api'
 import { toast } from 'sonner'
-import { DEFECT_PRIORITIES, DEFECT_SEVERITIES } from 'convex/defects'
+import { DEFECT_PRIORITIES, DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
 import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -136,7 +136,22 @@ function ProjectCell({ row }: { row: { original: DefectTableItem } }) {
 }
 
 function TypeCell({ row }: { row: { original: DefectTableItem } }) {
-  return <Badge variant="default">{row.original.type}</Badge>
+  const types = row.original.types || []
+  if (types.length === 0) {
+    return <span className="text-muted-foreground text-sm">No types</span>
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {types.map((type) => {
+        const typeLabel = DEFECT_TYPES.find((t) => t.value === type)?.label || type
+        return (
+          <Badge key={type} variant="default" className="text-xs">
+            {typeLabel}
+          </Badge>
+        )
+      })}
+    </div>
+  )
 }
 
 function PriorityCell({ row }: { row: { original: DefectTableItem } }) {
@@ -233,8 +248,8 @@ export function createDashboardColumns(): Array<ColumnDef<DefectTableItem>> {
       cell: ({ row }) => <ProjectCell row={row} />,
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
+      accessorKey: 'types',
+      header: 'Types',
       cell: ({ row }) => <TypeCell row={row} />,
     },
     {
@@ -292,8 +307,8 @@ export function createDefectsColumns(
       cell: ({ row }) => <ProjectCell row={row} />,
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
+      accessorKey: 'types',
+      header: 'Types',
       cell: ({ row }) => <TypeCell row={row} />,
     },
     {
