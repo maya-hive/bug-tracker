@@ -14,7 +14,7 @@ import {
   UserRoundPen,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { DEFECT_SEVERITIES } from 'convex/defects'
+import { DEFECT_SEVERITIES, DEFECT_TYPES } from 'convex/defects'
 import type { DefectStatus } from 'convex/defects'
 import type { DefectTableItem } from './defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
@@ -138,10 +138,16 @@ export function DefectCard({
           </div>
 
           <div className="mb-1 flex items-center gap-2 flex-wrap">
-            <Badge variant="default" className="gap-1.5">
-              <AlertCircle className="size-3" />
-              {defect.type}
-            </Badge>
+            {(defect.types || []).map((type) => {
+              const typeLabel =
+                DEFECT_TYPES.find((t) => t.value === type)?.label || type
+              return (
+                <Badge key={type} variant="default" className="gap-1.5">
+                  <AlertCircle className="size-3" />
+                  {typeLabel}
+                </Badge>
+              )
+            })}
             <Badge
               variant={
                 DEFECT_SEVERITIES.find((s) => s.value === defect.severity)

@@ -10,12 +10,6 @@ import {
   DEFECT_SEVERITIES,
   DEFECT_TYPES,
 } from 'convex/defects'
-import type {
-  DefectPriority,
-  DefectSeverity,
-  DefectStatus,
-  DefectType,
-} from 'convex/defects'
 import type { Id } from 'convex/_generated/dataModel'
 import type { DefectTableItem } from './defects-table.types'
 import { defectFormSchema } from '~/components/defects/defect-form.types'
@@ -43,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Checkbox } from '~/components/ui/checkbox'
 import {
   Popover,
   PopoverContent,
@@ -75,6 +70,7 @@ export function EditDefectDialog({
   const [uploadingFile, setUploadingFile] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const [typesOpen, setTypesOpen] = useState(false)
   const project = useQuery(api.projects.getProject, {
     projectId: defect?.projectId ?? null,
   } as { projectId: Id<'projects'> | null })
@@ -90,7 +86,7 @@ export function EditDefectDialog({
     defaultValues: {
       projectId: (defect?.projectId || '') as string,
       name: defect?.name || '',
-      type: (defect?.type || '') as string,
+      types: (defect?.types || []) as Array<string>,
       description: defect?.description || '',
       assignedTo: (defect?.assignedTo || '') as string,
       severity: (defect?.severity || '') as string,
@@ -111,12 +107,12 @@ export function EditDefectDialog({
           defectId: defect._id as Id<'defects'>,
           projectId: validated.projectId as Id<'projects'>,
           name: validated.name,
-          type: validated.type as DefectType,
+          types: validated.types,
           description: validated.description,
           assignedTo: validated.assignedTo as Id<'users'>,
-          severity: validated.severity as DefectSeverity,
-          priority: validated.priority as DefectPriority,
-          status: validated.status as DefectStatus,
+          severity: validated.severity,
+          priority: validated.priority,
+          status: validated.status,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -138,7 +134,7 @@ export function EditDefectDialog({
       form.reset({
         projectId: String(defect.projectId),
         name: defect.name,
-        type: String(defect.type),
+        types: defect.types || [],
         description: defect.description,
         assignedTo: String(defect.assignedTo || ''),
         severity: String(defect.severity),
@@ -270,32 +266,81 @@ export function EditDefectDialog({
               />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <form.Field
-                  name="type"
+                  name="types"
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
+                    const selectedTypes = field.state.value
+                    const displayValue =
+                      selectedTypes.length === 0
+                        ? 'Select types'
+                        : selectedTypes.length === 1
+                          ? DEFECT_TYPES.find(
+                              (t) => t.value === selectedTypes[0],
+                            )?.label || 'Select types'
+                          : `${selectedTypes.length} types selected`
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Type</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DEFECT_TYPES.map((type) => (
-                              <SelectItem key={type.id} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FieldLabel htmlFor={field.name}>Types</FieldLabel>
+                        <Popover open={typesOpen} onOpenChange={setTypesOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id={field.name}
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={typesOpen}
+                              className="w-full justify-between"
+                              aria-invalid={isInvalid}
+                              disabled={isSubmitting}
+                            >
+                              {displayValue}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search types..." />
+                              <CommandList>
+                                <CommandEmpty>No type found.</CommandEmpty>
+                                <CommandGroup>
+                                  {DEFECT_TYPES.map((type) => {
+                                    const isSelected = selectedTypes.includes(
+                                      type.value,
+                                    )
+                                    return (
+                                      <CommandItem
+                                        key={type.value}
+                                        value={type.value}
+                                        onSelect={() => {
+                                          const newTypes = isSelected
+                                            ? selectedTypes.filter(
+                                                (t) => t !== type.value,
+                                              )
+                                            : [...selectedTypes, type.value]
+                                          field.handleChange(newTypes)
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() => {
+                                            const newTypes = isSelected
+                                              ? selectedTypes.filter(
+                                                  (t) => t !== type.value,
+                                                )
+                                              : [...selectedTypes, type.value]
+                                            field.handleChange(newTypes)
+                                          }}
+                                        />
+                                        {type.label}
+                                      </CommandItem>
+                                    )
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}

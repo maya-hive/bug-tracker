@@ -7,6 +7,7 @@ import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DashboardFilters as DashboardFiltersType } from '~/components/dashboard/dashboard-filters'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
+import type { DefectType } from 'convex/defects'
 import { SectionCard, SectionCardWrapper } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
@@ -45,7 +46,7 @@ function Dashboard() {
         projectId: defect.projectId,
         projectName: defect.projectName,
         name: defect.name,
-        type: defect.type,
+        types: defect.types,
         description: defect.description,
         screenshot: defect.screenshot,
         assignedTo: defect.assignedTo,
@@ -68,8 +69,11 @@ function Dashboard() {
           return false
         }
 
-        if (filters.type !== null && defect.type !== filters.type) {
-          return false
+        if (filters.type !== null) {
+          const defectTypes = defect.types || []
+          if (!defectTypes.includes(filters.type as DefectType)) {
+            return false
+          }
         }
 
         if (filters.assignedTo !== null) {
@@ -97,8 +101,8 @@ function Dashboard() {
     const criticalBugs = defectsData.filter(
       (defect) => defect.severity === 'critical',
     ).length
-    const unitTestFailures = defectsData.filter(
-      (defect) => defect.type === 'unit test failure',
+    const unitTestFailures = defectsData.filter((defect) =>
+      (defect.types || []).includes('unit test failure'),
     ).length
 
     return {

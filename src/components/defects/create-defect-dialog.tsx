@@ -10,12 +10,6 @@ import {
   DEFECT_SEVERITIES,
   DEFECT_TYPES,
 } from 'convex/defects'
-import type {
-  DefectPriority,
-  DefectSeverity,
-  DefectStatus,
-  DefectType,
-} from 'convex/defects'
 import type { Id } from 'convex/_generated/dataModel'
 import {
   defaultDefectFormValues,
@@ -45,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Checkbox } from '~/components/ui/checkbox'
 import {
   Popover,
   PopoverContent,
@@ -77,6 +72,7 @@ export function CreateDefectDialog({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedProject] = useProject()
   const [assignedToOpen, setAssignedToOpen] = useState(false)
+  const [typesOpen, setTypesOpen] = useState(false)
   const project = useQuery(api.projects.getProject, {
     projectId: selectedProject ?? null,
   } as { projectId: Id<'projects'> | null })
@@ -99,10 +95,10 @@ export function CreateDefectDialog({
           name: validated.name,
           description: validated.description,
           assignedTo: validated.assignedTo as Id<'users'>,
-          type: validated.type as DefectType,
-          severity: validated.severity as DefectSeverity,
-          priority: validated.priority as DefectPriority,
-          status: validated.status as DefectStatus,
+          types: validated.types,
+          severity: validated.severity,
+          priority: validated.priority,
+          status: validated.status,
           screenshot: screenshot ? (screenshot as Id<'_storage'>) : undefined,
         })
 
@@ -235,32 +231,81 @@ export function CreateDefectDialog({
               />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <form.Field
-                  name="type"
+                  name="types"
                   children={(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
+                    const selectedTypes = field.state.value
+                    const displayValue =
+                      selectedTypes.length === 0
+                        ? 'Select types'
+                        : selectedTypes.length === 1
+                          ? DEFECT_TYPES.find(
+                              (t) => t.value === selectedTypes[0],
+                            )?.label || 'Select types'
+                          : `${selectedTypes.length} types selected`
                     return (
                       <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Type</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) => field.handleChange(value)}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            aria-invalid={isInvalid}
-                          >
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DEFECT_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FieldLabel htmlFor={field.name}>Types</FieldLabel>
+                        <Popover open={typesOpen} onOpenChange={setTypesOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              id={field.name}
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={typesOpen}
+                              className="w-full justify-between"
+                              aria-invalid={isInvalid}
+                              disabled={isSubmitting}
+                            >
+                              {displayValue}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search types..." />
+                              <CommandList>
+                                <CommandEmpty>No type found.</CommandEmpty>
+                                <CommandGroup>
+                                  {DEFECT_TYPES.map((type) => {
+                                    const isSelected = selectedTypes.includes(
+                                      type.value,
+                                    )
+                                    return (
+                                      <CommandItem
+                                        key={type.value}
+                                        value={type.value}
+                                        onSelect={() => {
+                                          const newTypes = isSelected
+                                            ? selectedTypes.filter(
+                                                (t) => t !== type.value,
+                                              )
+                                            : [...selectedTypes, type.value]
+                                          field.handleChange(newTypes)
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() => {
+                                            const newTypes = isSelected
+                                              ? selectedTypes.filter(
+                                                  (t) => t !== type.value,
+                                                )
+                                              : [...selectedTypes, type.value]
+                                            field.handleChange(newTypes)
+                                          }}
+                                        />
+                                        {type.label}
+                                      </CommandItem>
+                                    )
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         {isInvalid && (
                           <FieldError errors={field.state.meta.errors} />
                         )}
