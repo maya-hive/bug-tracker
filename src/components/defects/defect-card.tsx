@@ -260,7 +260,7 @@ export function DefectCard({
                       return (
                         <div
                           key={index}
-                          className="text-sm py-2 px-3 rounded-sm bg-muted/50 border border-border/50 space-y-1.5"
+                          className="text-sm py-2 px-3 rounded-sm bg-muted/30 border border-border/50 space-y-1.5"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -277,11 +277,17 @@ export function DefectCard({
                                 {entry.status.label}
                               </Badge>
                               <div className="text-xs text-muted-foreground">
-                                Changed by {getUserName(entry.changedBy)}
+                                by {getUserName(entry.changedBy)}
                               </div>
                             </div>
                             <span className="text-xs text-muted-foreground shrink-0">
-                              {format(new Date(entry.timestamp), 'MMM d, yyyy')}
+                              {new Intl.DateTimeFormat('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }).format(new Date(entry.timestamp))}
                             </span>
                           </div>
                         </div>
