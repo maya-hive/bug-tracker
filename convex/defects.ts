@@ -745,3 +745,111 @@ export const deleteDefect = mutation({
     return null
   },
 })
+
+export const getDefectSeverityDistribution = query({
+  args: {
+    projectId: v.optional(v.union(v.id('projects'), v.null())),
+  },
+  returns: v.array(
+    v.object({
+      severity: v.string(),
+      count: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
+    const allSeverities = await ctx.db.query('defectSeverities').collect()
+    const defects = await ctx.db.query('defects').collect()
+
+    const filteredDefects = !args.projectId
+      ? defects
+      : defects.filter((defect) => defect.projectId === args.projectId)
+
+    const severityCounts: Record<string, number> = {}
+
+    for (const severity of allSeverities) {
+      severityCounts[severity.label] = 0
+    }
+
+    for (const defect of filteredDefects) {
+      const severity = allSeverities.find((s) => s._id === defect.severity)
+      if (severity) {
+        severityCounts[severity.label] =
+          (severityCounts[severity.label] || 0) + 1
+      }
+    }
+
+    const result = allSeverities
+      .sort((a, b) => a.order - b.order)
+      .map((severity) => ({
+        severity: severity.label,
+        count: severityCounts[severity.label] || 0,
+      }))
+
+    return result
+  },
+})
+
+export const getDefectsOvertime = query({
+  args: {
+    projectId: v.optional(v.union(v.id('projects'), v.null())),
+  },
+  returns: v.object({
+    data: v.array(v.any()),
+    types: v.array(
+      v.object({
+        value: v.string(),
+        label: v.string(),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    if (!(await ctx.auth.getUserIdentity())) {
+      throw new Error('Unauthorized')
+    }
+
+    const defects = await ctx.db.query('defects').collect()
+    const allTypes = await ctx.db.query('defectTypes').collect()
+
+    const filteredDefects = !args.projectId
+      ? defects
+      : defects.filter((defect) => defect.projectId === args.projectId)
+
+    const dateMap: Record<string, Record<string, number>> = {}
+
+    for (const defect of filteredDefects) {
+      const date = new Date(defect._creationTime)
+      const dateStr = date.toISOString().split('T')[0]
+
+      if (!(dateStr in dateMap)) {
+        dateMap[dateStr] = {}
+        for (const type of allTypes) {
+          dateMap[dateStr][type.value] = 0
+        }
+      }
+
+      const defectTypes = allTypes.filter((t) => defect.types.includes(t._id))
+      for (const type of defectTypes) {
+        dateMap[dateStr][type.value] += 1
+      }
+    }
+
+    const data = Object.entries(dateMap)
+      .map(([date, counts]) => ({
+        date,
+        ...counts,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    return {
+      data,
+      types: allTypes.map((t) => ({
+        value: t.value,
+        label: t.label,
+      })),
+    }
+  },
+})

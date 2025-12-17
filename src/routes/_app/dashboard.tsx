@@ -7,11 +7,13 @@ import { AlertTriangle, CircleAlert, CircleX, Crosshair } from 'lucide-react'
 import type { DashboardFilters as DashboardFiltersType } from '~/components/dashboard/dashboard-filters'
 import type { DefectTableItem } from '~/components/defects/defects-table.types'
 import type { Id } from 'convex/_generated/dataModel'
-import { SectionCard, SectionCardWrapper } from '~/components/section-card'
+import { SectionCard } from '~/components/section-card'
 import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
 import { useProject } from '~/hooks/use-project'
 import { DashboardFilters } from '~/components/dashboard/dashboard-filters'
+import { DefectsOvertimeChart } from '~/components/dashboard/defects-overtime-chart'
+import { DefectSeverityRadar } from '~/components/dashboard/defect-severity-radar'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
@@ -135,7 +137,7 @@ function Dashboard() {
           />
         </div>
       </div>
-      <SectionCardWrapper>
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-4 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         <SectionCard
           title="Total Bugs"
           value={metrics.totalBugs}
@@ -160,7 +162,15 @@ function Dashboard() {
           icon={<CircleX />}
           description="Unit tests failed"
         />
-      </SectionCardWrapper>
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="col-span-1 lg:col-span-9">
+          <DefectsOvertimeChart />
+        </div>
+        <div className="col-span-1 lg:col-span-3">
+          <DefectSeverityRadar />
+        </div>
+      </div>
       <Table data={defectsData} />
     </>
   )
