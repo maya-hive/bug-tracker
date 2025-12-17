@@ -39,11 +39,7 @@ export function DefectsOvertimeChart() {
   const chartConfig = React.useMemo<ChartConfig>(() => {
     if (!result?.types) return {}
 
-    const config: ChartConfig = {
-      type: {
-        label: 'Defect Type',
-      },
-    }
+    const config: ChartConfig = {}
 
     result.types.forEach((type, index) => {
       config[type.value] = {
@@ -142,7 +138,6 @@ export function DefectsOvertimeChart() {
                 content={
                   <ChartTooltipContent
                     className="w-[150px]"
-                    nameKey="type"
                     labelFormatter={(value) => {
                       return new Date(value).toLocaleDateString('en-US', {
                         month: 'short',
