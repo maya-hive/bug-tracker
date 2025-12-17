@@ -1,6 +1,8 @@
 'use client'
 
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from 'recharts'
+import { useQuery } from 'convex/react'
+import { api } from 'convex/_generated/api'
 
 import type { ChartConfig } from '~/components/ui/chart'
 import {
@@ -15,26 +17,39 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '~/components/ui/chart'
-
-export const description = 'A radar chart'
-
-const chartData = [
-  { month: 'January', desktop: 186 },
-  { month: 'February', desktop: 305 },
-  { month: 'March', desktop: 237 },
-  { month: 'April', desktop: 273 },
-  { month: 'May', desktop: 209 },
-  { month: 'June', desktop: 214 },
-]
+import { useProject } from '~/hooks/use-project'
 
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  count: {
+    label: 'Defects',
     color: 'var(--chart-2)',
   },
 } satisfies ChartConfig
 
 export function DefectSeverityRadar() {
+  const [projectId] = useProject()
+  const data = useQuery(api.defects.getDefectSeverityDistribution, {
+    projectId: projectId,
+  })
+
+  if (!data) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="border-b items-center pb-4">
+          <CardTitle>Defect Severity Distribution</CardTitle>
+          <CardDescription>
+            Showing the distribution of defects by severity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-0">
+          <div className="flex items-center justify-center min-h-[250px]">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="h-full">
       <CardHeader className="border-b items-center pb-4">
@@ -43,22 +58,24 @@ export function DefectSeverityRadar() {
           Showing the distribution of defects by severity
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <RadarChart data={chartData}>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <PolarAngleAxis dataKey="month" />
-            <PolarGrid />
-            <Radar
-              dataKey="desktop"
-              fill="var(--color-desktop)"
-              fillOpacity={0.6}
-            />
-          </RadarChart>
-        </ChartContainer>
+      <CardContent className="overflow-visible">
+        <div className="overflow-visible">
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[300px]"
+          >
+            <RadarChart data={data} margin={{ right: 20, left: 20 }}>
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <PolarAngleAxis dataKey="severity" />
+              <PolarGrid />
+              <Radar
+                dataKey="count"
+                fill="var(--color-count)"
+                fillOpacity={0.6}
+              />
+            </RadarChart>
+          </ChartContainer>
+        </div>
       </CardContent>
     </Card>
   )
