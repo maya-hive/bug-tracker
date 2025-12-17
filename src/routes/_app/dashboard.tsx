@@ -12,6 +12,8 @@ import { DefectsTable } from '~/components/defects/defects-table'
 import { createDashboardColumns } from '~/components/defects/defects-table-columns'
 import { useProject } from '~/hooks/use-project'
 import { DashboardFilters } from '~/components/dashboard/dashboard-filters'
+import { DefectsOvertimeChart } from '~/components/dashboard/defects-overtime-chart'
+import { DefectSeverityRadar } from '~/components/dashboard/defect-severity-radar'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
@@ -161,6 +163,14 @@ function Dashboard() {
           description="Unit tests failed"
         />
       </SectionCardWrapper>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="col-span-1 lg:col-span-9">
+          <DefectsOvertimeChart />
+        </div>
+        <div className="col-span-1 lg:col-span-3">
+          <DefectSeverityRadar />
+        </div>
+      </div>
       <Table data={defectsData} />
     </>
   )
