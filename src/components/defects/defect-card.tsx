@@ -32,6 +32,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog'
 import { cn } from '~/lib/utils'
 import { ImageZoom } from '~/components/ui/image-zoom'
 import {
@@ -54,6 +60,7 @@ export function DefectCard({
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const [statusHistoryExpanded, setStatusHistoryExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [descriptionDialogOpen, setDescriptionDialogOpen] = useState(false)
 
   const imageUrl = useQuery(
     api.defects.getFileUrl,
@@ -159,7 +166,11 @@ export function DefectCard({
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-4 pt-0">
-          <div className="space-y-1.5">
+          <div
+            className="space-y-1.5 cursor-pointer hover:bg-muted/50 rounded-sm p-2 -m-2 transition-colors"
+            onClick={() => setDescriptionDialogOpen(true)}
+            title="Click to view full description"
+          >
             <p className="text-sm leading-relaxed line-clamp-3">
               {defect.description}
             </p>
@@ -365,6 +376,20 @@ export function DefectCard({
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={descriptionDialogOpen} onOpenChange={setDescriptionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{defect.name}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-2">
+            <h4 className="text-sm font-medium">Description</h4>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {defect.description}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {defect.screenshot && (
         <ImageLightbox
