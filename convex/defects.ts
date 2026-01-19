@@ -9,6 +9,7 @@ export const DEFECT_TYPES = [
   { id: 3, label: 'Content', value: 'content' },
   { id: 4, label: 'Improvement Request', value: 'improvement request' },
   { id: 5, label: 'Unit Test Failure', value: 'unit test failure' },
+  { id: 6, label: 'Responsiveness', value: 'responsiveness' },
 ] as const
 
 export const DEFECT_SEVERITIES = [

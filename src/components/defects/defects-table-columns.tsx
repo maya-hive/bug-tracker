@@ -1,4 +1,4 @@
-import { Link, Pencil, Trash2 } from 'lucide-react'
+import { Activity, AlertCircle, Clock, Link, Pencil, Tag, Trash2, UserCheck, UserRoundPen } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
@@ -16,6 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog'
+import { ImageZoom } from '~/components/ui/image-zoom'
 import {
   getStatusIcon,
   getStatusIconColor,
@@ -43,8 +50,173 @@ function IDCell({ row }: { row: { original: DefectTableItem } }) {
   )
 }
 
+function DefectViewDialog({
+  defect,
+  open,
+  onOpenChange,
+}: {
+  defect: DefectTableItem
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const imageUrl = useQuery(
+    api.defects.getFileUrl,
+    defect.screenshot
+      ? { storageId: defect.screenshot as Id<'_storage'> }
+      : 'skip',
+  )
+
+  const StatusIcon = getStatusIcon(defect.status.value as any)
+  const statusIconColor = getStatusIconColor(defect.status.value as any)
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl gap-0">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl pr-8">{defect.name}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="overflow-y-auto max-h-[calc(85vh-8rem)] pr-2 -mr-2">
+          <div className="space-y-6">
+            <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <div className="text-xs text-muted-foreground mb-1">Status</div>
+                <Badge variant="outline" className="text-sm gap-2">
+                  <StatusIcon className={cn('size-4', statusIconColor)} />
+                  {defect.status.label}
+                </Badge>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <div className="text-xs text-muted-foreground mb-1">Project</div>
+                <div className="text-sm font-medium">{defect.projectName}</div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs text-muted-foreground mb-2">Types</div>
+                <div className="flex flex-wrap gap-2">
+                  {defect.types.length === 0 ? (
+                    <span className="text-sm text-muted-foreground">No types assigned</span>
+                  ) : (
+                    defect.types.map((type) => (
+                      <Badge key={type._id} variant="default" className="gap-1.5">
+                        <AlertCircle className="size-3" />
+                        {type.label}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex gap-4 flex-wrap">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-2">Severity</div>
+                  <Badge variant={defect.severity.color as any} className="gap-1.5">
+                    <Activity className="size-3" />
+                    {defect.severity.label}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <div className="text-xs text-muted-foreground mb-2">Priority</div>
+                  <Badge variant={defect.priority.color as any} className="gap-1.5">
+                    <Tag className="size-3" />
+                    {defect.priority.label}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">Description</div>
+              <div className="text-sm leading-relaxed whitespace-pre-wrap p-3 rounded-md bg-muted/30 border border-border/50">
+                {defect.description}
+              </div>
+            </div>
+
+            <div className="flex gap-4 flex-wrap">
+              {defect.reporterName && (
+                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                  <div className="flex items-center justify-center size-9 rounded-md bg-muted/50 border border-border/50 shrink-0">
+                    <UserCheck className="size-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Reported by</div>
+                    <div className="font-medium text-sm">{defect.reporterName}</div>
+                  </div>
+                </div>
+              )}
+              
+              {defect.assignedToName && (
+                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                  <div className="flex items-center justify-center size-9 rounded-md bg-muted/50 border border-border/50 shrink-0">
+                    <UserRoundPen className="size-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Assigned to</div>
+                    <div className="font-medium text-sm">{defect.assignedToName}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {defect.screenshot && imageUrl && (
+              <div>
+                <div className="text-xs text-muted-foreground mb-2">Screenshot</div>
+                <ImageZoom
+                  zoomMargin={100}
+                  backdropClassName={cn(
+                    '[&_[data-rmiz-modal-overlay="visible"]]:bg-black/80',
+                  )}
+                >
+                  <img
+                    className="w-full rounded-md object-cover max-h-96 border border-border/50"
+                    src={imageUrl}
+                    loading="lazy"
+                    alt="Defect screenshot"
+                  />
+                </ImageZoom>
+              </div>
+            )}
+
+            <div className="flex gap-4 flex-wrap text-xs text-muted-foreground pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2">
+                <Clock className="size-3.5" />
+                <span>Created: {format(new Date(defect._creationTime), 'MMM d, yyyy h:mm a')}</span>
+              </div>
+              {defect.updatedAt && (
+                <div className="flex items-center gap-2">
+                  <Clock className="size-3.5" />
+                  <span>Updated: {format(new Date(defect.updatedAt), 'MMM d, yyyy h:mm a')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function NameCell({ row }: { row: { original: DefectTableItem } }) {
-  return <div className="font-medium">{row.original.name}</div>
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={() => setDialogOpen(true)}
+        className="font-medium text-left hover:underline hover:text-primary transition-colors cursor-pointer"
+      >
+        {row.original.name}
+      </button>
+      <DefectViewDialog
+        defect={row.original}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+    </>
+  )
 }
 
 function SeverityCell({ row }: { row: { original: DefectTableItem } }) {
