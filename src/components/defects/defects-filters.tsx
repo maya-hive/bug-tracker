@@ -207,22 +207,7 @@ export function DefectsFilters({
           <SelectTrigger>
             <div className="flex items-center gap-2">
               {filters.status ? (
-                <>
-                  {(() => {
-                    const statusObj = defectStatuses?.find(
-                      (s) => s._id === filters.status,
-                    )
-                    if (!statusObj) return null
-                    const StatusIcon = getStatusIcon(statusObj.value as any)
-                    const statusIconColor = getStatusIconColor(
-                      statusObj.value as any,
-                    )
-                    return (
-                      <StatusIcon className={cn('size-4', statusIconColor)} />
-                    )
-                  })()}
-                  <SelectValue />
-                </>
+                <SelectValue />
               ) : (
                 <SelectValue placeholder="Status" />
               )}
