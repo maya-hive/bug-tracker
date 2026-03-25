@@ -727,6 +727,41 @@ export const addComment = mutation({
   },
 })
 
+export const deleteComment = mutation({
+  args: {
+    defectId: v.id('defects'),
+    commentTimestamp: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) {
+      throw new Error('Unauthorized')
+    }
+
+    const defect = await ctx.db.get(args.defectId)
+    if (!defect) {
+      throw new Error('Defect not found')
+    }
+
+    const comments = defect.comments ?? []
+    const commentIndex = comments.findIndex(
+      (c) => c.timestamp === args.commentTimestamp && c.authorId === userId,
+    )
+
+    if (commentIndex === -1) {
+      throw new Error('Comment not found or you are not the author')
+    }
+
+    const updatedComments = comments.filter(
+      (_, i) => i !== commentIndex,
+    )
+
+    await ctx.db.patch(args.defectId, { comments: updatedComments })
+    return null
+  },
+})
+
 export const deleteDefect = mutation({
   args: {
     defectId: v.id('defects'),

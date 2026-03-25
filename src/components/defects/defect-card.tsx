@@ -10,6 +10,7 @@ import {
   Clock,
   MessageSquare,
   Tag,
+  Trash2,
   UserCheck,
   UserRoundPen,
 } from 'lucide-react'
@@ -33,6 +34,16 @@ import {
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -54,9 +65,13 @@ export function DefectCard({
   onAddComment: (defect: DefectTableItem) => void
 }) {
   const updateDefect = useMutation(api.defects.updateDefect)
+  const deleteComment = useMutation(api.defects.deleteComment)
   const users = useQuery(api.users.listUsers)
+  const currentUser = useQuery(api.users.getCurrentUser)
   const defectStatuses = useQuery(api.defects.getDefectStatuses)
   const [statusUpdating, setStatusUpdating] = useState(false)
+  const [deletingCommentTimestamp, setDeletingCommentTimestamp] = useState<number | null>(null)
+  const [pendingDeleteTimestamp, setPendingDeleteTimestamp] = useState<number | null>(null)
   const [commentsExpanded, setCommentsExpanded] = useState(false)
   const [statusHistoryExpanded, setStatusHistoryExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -88,6 +103,22 @@ export function DefectCard({
   const getUserName = (userId: string) => {
     const foundUser = users?.find((u) => u._id === userId)
     return foundUser?.name || foundUser?.email || 'Unknown User'
+  }
+
+  const handleDeleteComment = async (commentTimestamp: number) => {
+    setDeletingCommentTimestamp(commentTimestamp)
+    try {
+      await deleteComment({
+        defectId: defect._id as Id<'defects'>,
+        commentTimestamp,
+      })
+      toast.success('Comment deleted')
+    } catch (error) {
+      toast.error('Failed to delete comment')
+      console.error(error)
+    } finally {
+      setDeletingCommentTimestamp(null)
+    }
   }
 
   const comments = defect.comments || []
@@ -338,22 +369,39 @@ export function DefectCard({
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-2.5 pt-2">
-                  {comments.slice(0, 3).map((comment, index) => (
-                    <div
-                      key={index}
-                      className="text-sm py-2 px-3 rounded-sm bg-muted/50 border border-border/50 space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-xs">
-                          {getUserName(comment.authorId)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(comment.timestamp), 'MMM d, yyyy')}
-                        </span>
+                  {comments.slice(0, 3).map((comment, index) => {
+                    const isOwner = currentUser?._id === comment.authorId
+                    const isDeleting = deletingCommentTimestamp === comment.timestamp
+                    return (
+                      <div
+                        key={index}
+                        className="text-sm py-2 px-3 rounded-sm bg-muted/50 border border-border/50 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-xs">
+                            {getUserName(comment.authorId)}
+                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(comment.timestamp), 'MMM d, yyyy')}
+                            </span>
+                            {isOwner && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-5 text-muted-foreground hover:text-destructive hover:cursor-pointer"
+                                disabled={isDeleting}
+                                onClick={() => setPendingDeleteTimestamp(comment.timestamp)}
+                              >
+                                <Trash2 className="size-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs leading-relaxed">{comment.text}</p>
                       </div>
-                      <p className="text-xs leading-relaxed">{comment.text}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {commentsCount > 3 && (
                     <p className="text-xs text-muted-foreground text-center pt-1">
                       +{commentsCount - 3} more comment
@@ -398,6 +446,34 @@ export function DefectCard({
           onOpenChange={setLightboxOpen}
         />
       )}
+
+      <AlertDialog
+        open={pendingDeleteTimestamp !== null}
+        onOpenChange={(open) => { if (!open) setPendingDeleteTimestamp(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (pendingDeleteTimestamp !== null) {
+                  handleDeleteComment(pendingDeleteTimestamp)
+                  setPendingDeleteTimestamp(null)
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
